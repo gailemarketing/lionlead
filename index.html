@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
     <meta charset="UTF-8">
     <title>LionLead – Leadership Onboarding Companion</title>
-    </head>
+</head>
+
 <body>
     <header>
         <h1>🦁 LionLead</h1>
@@ -16,7 +18,7 @@
         <select id="user-role">
             <option value="Product Lead">Product Lead</option>
             <option value="Engineering Lead">Engineering Lead</option>
-            </select>
+        </select>
         <button onclick="startJourney()">Начать</button>
     </div>
 
@@ -35,12 +37,12 @@
 
     <script>
         // === ЛОГИКА ФРОНТЕНДА (JS) ===
-        
+
         // 1. Установите URL вашей Serverless Function Vercel
         const API_ENDPOINT = '/api/coach'; // В production это будет https://lionlead.gaillereports.com/api/coach
 
         let currentDay = 1;
-        
+
         function getWeekTheme(day) {
             if (day >= 1 && day <= 7) return "Identity Shift & Expectations";
             if (day >= 8 && day <= 14) return "Communication & Transparency";
@@ -60,7 +62,7 @@
         async function startJourney() {
             const role = document.getElementById('user-role').value;
             // Сохраняем прогресс (role, currentDay = 1) в localStorage
-            
+
             document.getElementById('setup-form').style.display = 'none';
             document.getElementById('daily-card').style.display = 'block';
             await loadDailyContent(currentDay, role);
@@ -69,7 +71,7 @@
         async function loadDailyContent(day, role) {
             const theme = getWeekTheme(day);
             document.getElementById('day-title').textContent = `Day ${day} of 30`;
-            
+
             // Вызов Serverless Function
             try {
                 const response = await fetch(API_ENDPOINT, {
@@ -83,17 +85,17 @@
                 }
 
                 const data = await response.json();
-                
+
                 // Отображение данных
                 document.getElementById('day-title').textContent = data.day_title;
                 document.getElementById('insight').innerHTML = `<strong>Insight:</strong> ${data.insight}`;
                 document.getElementById('action').innerHTML = `<strong>Action:</strong> ${data.micro_action}`;
                 document.getElementById('script').innerHTML = data.suggested_script ? `<strong>Script:</strong> ${data.suggested_script}` : '';
                 document.getElementById('reflection-question').innerHTML = `<strong>Reflection:</strong> ${data.reflection_question}`;
-                
+
             } catch (error) {
                 console.error("Error loading content:", error);
-                document.getElementById('insight').textContent = 'Ошибка загрузки контента. Проверьте API.';
+                document.getElementById('insight').innerHTML = `<strong>Ошибка:</strong> ${error.message || 'Проверьте API.'}`;
             }
         }
 
@@ -108,9 +110,10 @@
                 // Переход на страницу завершения
             }
         }
-        
+
         // Запускаем при загрузке страницы
         loadProgress(); 
     </script>
 </body>
+
 </html>
