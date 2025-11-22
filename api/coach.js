@@ -54,31 +54,17 @@ module.exports = async (req, res) => {
     }
 
     // Заменяем переменные в Master Prompt на фактические данные пользователя
-    const finalPrompt = MASTER_PROMPT
-        .replace('{DAY_X}', day)
-        .replace('{USER_ROLE}', role)
-        .replace('{WEEK_THEME}', theme);
+    const response = await result.response;
+    const text = response.text();
 
-    try {
-        // Используем модель Gemini 1.5 Flash (быстрая и экономичная)
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash", generationConfig: { responseMimeType: "application/json" } });
+    // Парсим JSON из ответа AI
+    const content = JSON.parse(text);
 
-        const result = await model.generateContent([
-            finalPrompt,
-            `Сгенерируй контент для ${day} и роли ${role}.`
-        ]);
+    // Отправляем чистый JSON контент обратно на фронтенд
+    res.status(200).json(content);
 
-        const response = await result.response;
-        const text = response.text();
-
-        // Парсим JSON из ответа AI
-        const content = JSON.parse(text);
-
-        // Отправляем чистый JSON контент обратно на фронтенд
-        res.status(200).json(content);
-
-    } catch (error) {
-        console.error("Google Gemini API Error:", error.message);
-        res.status(500).json({ error: 'Failed to generate coaching content.', details: error.message });
-    }
+} catch (error) {
+    console.error("Google Gemini API Error:", error.message);
+    res.status(500).json({ error: 'Failed to generate coaching content.', details: error.message });
+}
 };
