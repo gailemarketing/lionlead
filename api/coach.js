@@ -3,7 +3,9 @@
 const OpenAI = require('openai');
 
 // Инициализируем OpenAI API. Ключ будет взят из переменных окружения Vercel (см. Шаг 2)
-const openai = new OpenAI();
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 // Ваш Master Prompt (система инструкций для AI)
 const MASTER_PROMPT = `
