@@ -1,11 +1,9 @@
-// Импорт OpenAI
-// Установите библиотеку OpenAI: npm install openai
-const OpenAI = require('openai');
+// Импорт Google Generative AI
+// Установите библиотеку: npm install @google/generative-ai
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-// Инициализируем OpenAI API. Ключ будет взят из переменных окружения Vercel (см. Шаг 2)
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Инициализируем Google Generative AI. Ключ берется из переменных окружения
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
 
 // Ваш Master Prompt (система инструкций для AI)
 const MASTER_PROMPT = `
@@ -42,7 +40,7 @@ module.exports = async (req, res) => {
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
     }
-    
+
     // Проверка метода и получение данных
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Only POST method is allowed' });
@@ -54,7 +52,7 @@ module.exports = async (req, res) => {
     if (!day || !role || !theme) {
         return res.status(400).json({ error: 'Missing day, role, or theme in request body' });
     }
-    
+
     // Заменяем переменные в Master Prompt на фактические данные пользователя
     const finalPrompt = MASTER_PROMPT
         .replace('{DAY_X}', day)
@@ -62,24 +60,25 @@ module.exports = async (req, res) => {
         .replace('{WEEK_THEME}', theme);
 
     try {
-        const response = await openai.chat.completions.create({
-            model: "gpt-4o-mini", // Идеальный выбор по скорости и стоимости
-            messages: [
-                { role: "system", content: finalPrompt },
-                { role: "user", content: `Сгенерируй контент для ${day} и роли ${role}.` } // Финальная команда
-            ],
-            response_format: { type: "json_object" }, // Требуем JSON-вывод
-            temperature: 0.7,
-        });
+        // Используем модель Gemini 1.5 Flash (быстрая и экономичная)
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash", generationConfig: { responseMimeType: "application/json" } });
+
+        const result = await model.generateContent([
+            finalPrompt,
+            `Сгенерируй контент для ${day} и роли ${role}.`
+        ]);
+
+        const response = await result.response;
+        const text = response.text();
 
         // Парсим JSON из ответа AI
-        const content = JSON.parse(response.choices[0].message.content);
+        const content = JSON.parse(text);
 
         // Отправляем чистый JSON контент обратно на фронтенд
         res.status(200).json(content);
 
     } catch (error) {
-        console.error("OpenAI API Error:", error.message);
+        console.error("Google Gemini API Error:", error.message);
         res.status(500).json({ error: 'Failed to generate coaching content.', details: error.message });
     }
 };
