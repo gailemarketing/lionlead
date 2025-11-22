@@ -74,20 +74,6 @@
 
             // Вызов Serverless Function
             try {
-                const response = await fetch(API_ENDPOINT, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ day: `Day ${day}`, role: role, theme: theme })
-                });
-
-                if (!response.ok) {
-                    throw new Error('API request failed');
-                }
-
-                const data = await response.json();
-
-                // Отображение данных
-                document.getElementById('day-title').textContent = data.day_title;
                 document.getElementById('insight').innerHTML = `<strong>Insight:</strong> ${data.insight}`;
                 document.getElementById('action').innerHTML = `<strong>Action:</strong> ${data.micro_action}`;
                 document.getElementById('script').innerHTML = data.suggested_script ? `<strong>Script:</strong> ${data.suggested_script}` : '';
