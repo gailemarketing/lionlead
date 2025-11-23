@@ -49,8 +49,11 @@ module.exports = async (req, res) => {
 
                     zipEntries.forEach(entry => {
                         if (!entry.isDirectory) {
-                            // Capture HTML, CSS, JS, JSX, TSX files
-                            if (entry.entryName.match(/\.(html|css|js|jsx|ts|tsx)$/)) {
+                            // Capture specific React files to avoid size limits
+                            if (entry.entryName.endsWith('App.tsx') ||
+                                entry.entryName.endsWith('ai-coach.tsx') ||
+                                entry.entryName.endsWith('onboarding-form.tsx') ||
+                                entry.entryName.endsWith('journey-view.tsx')) {
                                 zipContent[entry.entryName] = zip.readAsText(entry);
                             }
                         }
