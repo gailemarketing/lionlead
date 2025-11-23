@@ -123,11 +123,9 @@ async function getUserProgress(folderId, userId) {
             if (!rows || rows.length === 0) return null;
 
             // Simple search for userId in the first column (assuming A=UserId)
-            // Header row is 0, data starts at 1
             const userRow = rows.find(row => row[0] === userId);
 
             if (userRow) {
-                // Return the whole row as context string
                 return `User Progress: ${userRow.join(', ')}`;
             }
         }
@@ -135,6 +133,50 @@ async function getUserProgress(folderId, userId) {
         console.error('Error fetching user progress:', error.message);
     }
     return null;
+}
+
+// 4. Save User Progress (Append to Sheet)
+async function saveUserProgress(userId, userName, day, reflection) {
+    try {
+        const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
+        const auth = getAuthClient();
+        const drive = google.drive({ version: 'v3', auth });
+        const sheets = google.sheets({ version: 'v4', auth });
+
+        // Find 'Progress' sheet
+        const res = await drive.files.list({
+            q: `'${folderId}' in parents and name = 'Progress' and mimeType = 'application/vnd.google-apps.spreadsheet' and trashed = false`,
+            fields: 'files(id)',
+        });
+
+        if (res.data.files.length === 0) {
+            console.error("Progress sheet not found.");
+            return false;
+        }
+
+        const spreadsheetId = res.data.files[0].id;
+
+        // Append Row: [UserId, Name, Day, Reflection, Timestamp]
+        await sheets.spreadsheets.values.append({
+            spreadsheetId,
+            range: 'A:E',
+            valueInputOption: 'RAW',
+            requestBody: {
+                values: [[
+                    userId,
+                    userName,
+                    day,
+                    reflection || '',
+                    new Date().toISOString()
+                ]]
+            }
+        });
+
+        return true;
+    } catch (error) {
+        console.error("Error saving progress:", error);
+        return false;
+    }
 }
 
 // 4. Initialize Drive Folder (Create defaults if missing)
@@ -402,5 +444,6 @@ module.exports = {
     getJourneyData,
     testEditFile,
     testSheetWrite,
-    debugListFiles
+    debugListFiles,
+    saveUserProgress
 };

@@ -423,14 +423,37 @@ function switchDay(day) {
     }
 }
 
-function completeDay() {
+async function completeDay() {
     if (!state.user.completedDays.includes(state.user.currentDay)) {
-        state.user.completedDays.push(state.user.currentDay);
+        const day = state.user.currentDay;
+        const reflection = state.user.reflections[day] || '';
+
+        // Optimistic UI Update
+        state.user.completedDays.push(day);
         if (state.user.currentDay < 30) {
             state.user.currentDay++;
         }
         localStorage.setItem('lionlead_user', JSON.stringify(state.user));
         renderApp();
+
+        // Save to Drive (Background)
+        try {
+            await fetch('/api/progress', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId: state.user.email, // Use email as ID for now
+                    userName: state.user.name,
+                    day: day,
+                    reflection: reflection
+                })
+            });
+            console.log("Progress saved to Drive");
+        } catch (err) {
+            console.error("Failed to save progress to Drive:", err);
+            // We don't revert UI because local storage is the source of truth for the user
+            // But we could show a toast notification here
+        }
     }
 }
 
