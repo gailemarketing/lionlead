@@ -1,7 +1,7 @@
 // State
 let state = {
-    user: null, // { name, role, email, currentDay, completedDays: [], reflections: {} }
-    currentTab: 'journey', // 'journey', 'coach', 'practice'
+    user: null,
+    currentTab: 'journey',
     messages: [
         {
             role: 'assistant',
@@ -15,7 +15,6 @@ let state = {
 const JOURNEY_DATA = [
     { day: 1, theme: "Identity Shift", title: "Embracing Your New Role", insight: "Your success now comes from your team's success.", action: "Schedule 1:1s with all direct reports.", script: "I'd love to hear your thoughts on what's going well...", reflection_question: "What's one thing you need to do differently?" },
     { day: 2, theme: "Identity Shift", title: "Active Listening", insight: "Great leaders listen more than they talk.", action: "Practice active listening in your next meeting.", script: "Thank you for sharing that. I appreciate your honesty...", reflection_question: "What did you learn by listening?" },
-    // Add more days as needed or fetch dynamically
 ];
 
 // Init
@@ -26,7 +25,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         lucide.createIcons();
 
-        // Check LocalStorage
         const savedUser = localStorage.getItem('lionlead_user');
         if (savedUser) {
             state.user = JSON.parse(savedUser);
@@ -39,8 +37,109 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error("App Init Error:", e);
     }
 });
-lucide.createIcons();
-if (state.currentTab === 'coach') scrollToBottom();
+
+window.onerror = function (msg, url, lineNo, columnNo, error) {
+    document.body.innerHTML += `<div style="color:red; padding:20px; border-top:1px solid #ccc;"><h3>Global Error</h3><p>${msg}</p><p>Line: ${lineNo}</p></div>`;
+    return false;
+};
+
+// --- Navigation & Header ---
+
+function logout() {
+    if (confirm("Are you sure you want to log out?")) {
+        localStorage.removeItem('lionlead_user');
+        state.user = null;
+        renderHome();
+    }
+}
+
+function renderHeader() {
+    return `
+        <div class="flex items-center justify-between mb-6 animate-in fade-in slide-in-from-top-4 duration-500">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center">
+                    <span class="text-lg">🦁</span>
+                </div>
+                <span class="font-heading font-bold text-lg">LionLead</span>
+            </div>
+            
+            <div class="flex items-center gap-3">
+                <div class="text-right hidden md:block">
+                    <p class="text-sm font-bold leading-none">${state.user.name}</p>
+                    <p class="text-xs text-muted-foreground">${state.user.role}</p>
+                </div>
+                <button onclick="logout()" class="p-2 rounded-full hover:bg-muted text-muted-foreground hover:text-destructive transition-colors" title="Logout">
+                    <i data-lucide="log-out" class="w-5 h-5"></i>
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+function switchTab(tab) {
+    state.currentTab = tab;
+    renderApp();
+}
+
+function renderNav() {
+    const tabs = [
+        { id: 'journey', label: 'Journey', icon: 'map' },
+        { id: 'coach', label: 'Coach', icon: 'bot' },
+        { id: 'practice', label: 'Practice', icon: 'dumbbell' }
+    ];
+
+    const desktopNav = `
+        <div class="hidden md:flex items-center justify-center gap-2 mb-8 bg-muted/30 p-1 rounded-full w-fit mx-auto">
+            ${tabs.map(tab => `
+                <button onclick="switchTab('${tab.id}')" class="flex items-center gap-2 px-6 py-2 rounded-full font-bold transition-all ${state.currentTab === tab.id ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}">
+                    <i data-lucide="${tab.icon}" class="w-4 h-4"></i>
+                    ${tab.label}
+                </button>
+            `).join('')}
+        </div>
+    `;
+
+    const mobileNavContainer = document.getElementById('mobile-nav');
+    if (mobileNavContainer) {
+        mobileNavContainer.classList.remove('hidden');
+        mobileNavContainer.innerHTML = tabs.map(tab => `
+            <button onclick="switchTab('${tab.id}')" class="flex flex-col items-center gap-1 ${state.currentTab === tab.id ? 'text-primary' : 'text-muted-foreground'}">
+                <i data-lucide="${tab.icon}" class="w-6 h-6"></i>
+                <span class="text-xs font-medium">${tab.label}</span>
+            </button>
+        `).join('');
+    }
+
+    return desktopNav;
+}
+
+// --- Main Render ---
+
+function renderApp() {
+    const app = document.getElementById('app');
+
+    let content = '';
+    switch (state.currentTab) {
+        case 'journey':
+            content = renderJourney();
+            break;
+        case 'coach':
+            content = renderCoach();
+            break;
+        case 'practice':
+            content = renderPractice();
+            break;
+    }
+
+    app.innerHTML = `
+        ${renderHeader()}
+        ${renderNav()}
+        <div class="animate-in fade-in duration-300">
+            ${content}
+        </div>
+    `;
+    lucide.createIcons();
+    if (state.currentTab === 'coach') scrollToBottom();
 }
 
 // --- Views ---
@@ -72,7 +171,6 @@ function renderHome() {
         <div id="onboarding-modal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
             <div class="relative bg-card w-[90%] max-w-md rounded-3xl shadow-2xl p-6 md:p-8 animate-in slide-in-from-bottom-10 duration-300 border border-border/50">
                 
-                <!-- Close Button -->
                 <button onclick="closeOnboarding()" class="absolute top-4 right-4 p-2 rounded-full hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
@@ -129,7 +227,6 @@ function handleOnboardingSubmit(e) {
     const formData = new FormData(e.target);
     const email = formData.get('email');
 
-    // Simple Email Validation
     if (!email || !email.includes('@') || !email.includes('.')) {
         alert("Please enter a valid company email.");
         return;
