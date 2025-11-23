@@ -1,4 +1,3 @@
-```javascript
 // Импорт OpenAI
 // Установите библиотеку OpenAI: npm install openai
 const OpenAI = require('openai');
@@ -6,31 +5,31 @@ const { getMasterPrompt, getKnowledgeBase, getUserProgress } = require('./google
 
 // Инициализируем OpenAI API. Ключ будет взят из переменных окружения Vercel
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+    apiKey: process.env.OPENAI_API_KEY,
 });
 
 // Default Master Prompt (fallback)
 const DEFAULT_MASTER_PROMPT = `
-Ты — LionLead, AI - компаньон для новоиспеченных менеджеров.
-Твоя миссия: предоставлять ежедневную микро - тренировку(один инсайт + одно действие) в течение первых 30 дней.
-Твой тон: теплый, мотивирующий, практичный, краткий.Ты используешь метафору льва / прайда(команда, лидерство).
-Крайне важно: общая длина контента(кроме заголовка) должна быть в пределах 110–130 слов.
+Ты — LionLead, AI-компаньон для новоиспеченных менеджеров.
+Твоя миссия: предоставлять ежедневную микро-тренировку (один инсайт + одно действие) в течение первых 30 дней.
+Твой тон: теплый, мотивирующий, практичный, краткий. Ты используешь метафору льва/прайда (команда, лидерство).
+Крайне важно: общая длина контента (кроме заголовка) должна быть в пределах 110–130 слов.
 Никогда не используй приветствия.
 
 Вам переданы переменные:
-{ DAY_X }: Текущий день в цикле 30 дней(например, Day 5).
-{ USER_ROLE }: Роль пользователя(например, Engineering Lead).
-{ WEEK_THEME }: Тема недели(например, Identity Shift & Expectations).
+{DAY_X}: Текущий день в цикле 30 дней (например, Day 5).
+{USER_ROLE}: Роль пользователя (например, Engineering Lead).
+{WEEK_THEME}: Тема недели (например, Identity Shift & Expectations).
 
-Сгенерируй только один JSON объект с контентом дня.Строго следуй этому формату JSON.Не добавляй никаких других комментариев, текста или пояснений вне этого JSON - блока.
+Сгенерируй только один JSON объект с контентом дня. Строго следуй этому формату JSON. Не добавляй никаких других комментариев, текста или пояснений вне этого JSON-блока.
 
 Формат вывода:
 {
-    "day_title": "Day {DAY_X} – {WEEK_THEME}",
-        "insight": "Короткий, мотивирующий инсайт о лидерстве, адаптированный под {USER_ROLE}, макс. 2 предложения.",
-            "micro_action": "Одно конкретное, реальное действие, которое пользователь должен выполнить сегодня. Фокусируйся на {USER_ROLE}.",
-                "suggested_script": "Опциональный, но полезный пример фразы или скрипта для применения micro_action (если применимо, иначе оставь пустым).",
-                    "reflection_question": "Один вопрос для рефлексии (1 предложение)."
+  "day_title": "Day {DAY_X} – {WEEK_THEME}",
+  "insight": "Короткий, мотивирующий инсайт о лидерстве, адаптированный под {USER_ROLE}, макс. 2 предложения.",
+  "micro_action": "Одно конкретное, реальное действие, которое пользователь должен выполнить сегодня. Фокусируйся на {USER_ROLE}.",
+  "suggested_script": "Опциональный, но полезный пример фразы или скрипта для применения micro_action (если применимо, иначе оставь пустым).",
+  "reflection_question": "Один вопрос для рефлексии (1 предложение)."
 }
 `;
 
@@ -44,7 +43,7 @@ module.exports = async (req, res) => {
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
     }
-    
+
     // Проверка метода и получение данных
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Only POST method is allowed' });
@@ -75,7 +74,7 @@ module.exports = async (req, res) => {
             // 2. Fetch Knowledge Base
             const knowledge = await getKnowledgeBase(folderId);
             if (knowledge) {
-                knowledgeContext = `\n\n[KNOWLEDGE BASE]\nUse the following information to inform your advice: \n${ knowledge } `;
+                knowledgeContext = `\n\n[KNOWLEDGE BASE]\nUse the following information to inform your advice:\n${knowledge}`;
                 console.log("Loaded Knowledge Base from Drive");
             }
 
@@ -83,7 +82,7 @@ module.exports = async (req, res) => {
             if (userId) {
                 const progress = await getUserProgress(folderId, userId);
                 if (progress) {
-                    userProgressContext = `\n\n[USER PROGRESS]\n${ progress } `;
+                    userProgressContext = `\n\n[USER PROGRESS]\n${progress}`;
                     console.log("Loaded User Progress from Sheets");
                 }
             }
@@ -94,7 +93,7 @@ module.exports = async (req, res) => {
     }
     // --------------------------------
 
-    
+
     // Заменяем переменные в Master Prompt на фактические данные пользователя
     // Append contexts to the prompt
     const finalSystemPrompt = masterPrompt + knowledgeContext + userProgressContext;
@@ -109,7 +108,7 @@ module.exports = async (req, res) => {
             model: "gpt-4o-mini", // Идеальный выбор по скорости и стоимости
             messages: [
                 { role: "system", content: finalSystemPrompt }, // Send the full system context
-                { role: "user", content: `Сгенерируй контент для ${ day } и роли ${ role }.Тема: ${ theme }.` } // Explicit user instruction
+                { role: "user", content: `Сгенерируй контент для ${day} и роли ${role}. Тема: ${theme}.` } // Explicit user instruction
             ],
             response_format: { type: "json_object" }, // Требуем JSON-вывод
             temperature: 0.7,
@@ -126,4 +125,3 @@ module.exports = async (req, res) => {
         res.status(500).json({ error: 'Failed to generate coaching content.', details: error.message });
     }
 };
-```

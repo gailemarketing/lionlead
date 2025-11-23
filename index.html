@@ -4,6 +4,66 @@
 <head>
     <meta charset="UTF-8">
     <title>LionLead – Leadership Onboarding Companion</title>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        #setup-form,
+        #daily-card {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        input,
+        select,
+        button {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        button {
+            background-color: #333;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background-color: #555;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .actions button {
+            flex: 1;
+        }
+    </style>
 </head>
 
 <body>
@@ -39,9 +99,17 @@
         // === ЛОГИКА ФРОНТЕНДА (JS) ===
 
         // 1. Установите URL вашей Serverless Function Vercel
-        const API_ENDPOINT = '/api/coach'; // В production это будет https://lionlead.gaillereports.com/api/coach
+        const API_ENDPOINT = '/api/coach';
 
         let currentDay = 1;
+
+        // Generate or retrieve User ID
+        let userId = localStorage.getItem('lionlead_user_id');
+        if (!userId) {
+            userId = 'user_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('lionlead_user_id', userId);
+        }
+        console.log("User ID:", userId);
 
         function getWeekTheme(day) {
             if (day >= 1 && day <= 7) return "Identity Shift & Expectations";
@@ -71,13 +139,14 @@
         async function loadDailyContent(day, role) {
             const theme = getWeekTheme(day);
             document.getElementById('day-title').textContent = `Day ${day} of 30`;
+            document.getElementById('insight').textContent = "Loading...";
 
             // Вызов Serverless Function
             try {
                 const response = await fetch(API_ENDPOINT, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ day: `Day ${day}`, role: role, theme: theme })
+                    body: JSON.stringify({ day: `Day ${day}`, role: role, theme: theme, userId: userId })
                 });
 
                 if (!response.ok) {
