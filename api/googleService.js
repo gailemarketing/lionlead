@@ -267,9 +267,34 @@ async function initializeDrive(folderId) {
     }
 }
 
+// 5. Fetch and Parse Journey Data
+async function getJourneyData(folderId) {
+    const promptText = await getMasterPrompt(folderId);
+    if (!promptText) return [];
+
+    const days = [];
+    const dayRegex = /Day\s+(\d+)\s+[—–-]\s+(.+?)\r?\nInsight:\s+(.+?)\r?\nToday's Action:\s+(.+?)\r?\nSuggested Script:\s+(.+?)\r?\nReflection:\s+(.+?)(?=\r?\nDay|\r?\n_{3,}|$)/gs;
+
+    let match;
+    while ((match = dayRegex.exec(promptText)) !== null) {
+        days.push({
+            day: parseInt(match[1]),
+            theme: "Leadership Fundamentals", // Default theme if not parsed
+            title: match[2].trim(),
+            insight: match[3].trim(),
+            action: match[4].trim(),
+            script: match[5].trim().replace(/^"|"$/g, ''), // Remove quotes
+            reflection_question: match[6].trim()
+        });
+    }
+
+    return days.sort((a, b) => a.day - b.day);
+}
+
 module.exports = {
     getMasterPrompt,
     getKnowledgeBase,
     getUserProgress,
-    initializeDrive
+    initializeDrive,
+    getJourneyData
 };

@@ -11,19 +11,35 @@ let state = {
     isTyping: false
 };
 
-// Mock Data
+// Mock Data (Fallback)
 const JOURNEY_DATA = [
     { day: 1, theme: "Identity Shift", title: "Embracing Your New Role", insight: "Your success now comes from your team's success.", action: "Schedule 1:1s with all direct reports.", script: "I'd love to hear your thoughts on what's going well...", reflection_question: "What's one thing you need to do differently?" },
     { day: 2, theme: "Identity Shift", title: "Active Listening", insight: "Great leaders listen more than they talk.", action: "Practice active listening in your next meeting.", script: "Thank you for sharing that. I appreciate your honesty...", reflection_question: "What did you learn by listening?" },
 ];
 
 // Init
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     try {
         if (typeof lucide === 'undefined') {
             throw new Error("Lucide icons library failed to load.");
         }
         lucide.createIcons();
+
+        // Fetch Dynamic Journey Data
+        try {
+            const res = await fetch('/api/journey');
+            if (res.ok) {
+                const dynamicData = await res.json();
+                if (dynamicData && dynamicData.length > 0) {
+                    // Update global JOURNEY_DATA with fetched data
+                    JOURNEY_DATA.length = 0;
+                    JOURNEY_DATA.push(...dynamicData);
+                    console.log("Loaded dynamic journey data:", JOURNEY_DATA.length, "days");
+                }
+            }
+        } catch (err) {
+            console.warn("Failed to load dynamic journey data, using fallback.", err);
+        }
 
         const savedUser = localStorage.getItem('lionlead_user');
         if (savedUser) {
