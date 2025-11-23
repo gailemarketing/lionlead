@@ -1,38 +1,55 @@
-const { initializeDrive } = require('./googleService');
+const { initializeDrive, getKnowledgeBase } = require('./googleService');
+const { google } = require('googleapis');
 
 module.exports = async (req, res) => {
     try {
         const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
         const serviceAccountKey = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
 
-        if (!folderId) {
-            throw new Error('Missing GOOGLE_DRIVE_FOLDER_ID');
-        }
-        if (!serviceAccountKey) {
-            throw new Error('Missing GOOGLE_SERVICE_ACCOUNT_KEY');
+        if (!folderId || !serviceAccountKey) {
+            return res.status(500).json({ error: 'Missing Environment Variables' });
         }
 
-        // Validate JSON parsing of the key
+        const credentials = JSON.parse(serviceAccountKey);
+        const auth = new google.auth.GoogleAuth({
+            credentials,
+            scopes: ['https://www.googleapis.com/auth/drive.readonly'],
+        });
+        const drive = google.drive({ version: 'v3', auth });
+
+        // 1. Get Knowledge Base Content (Prompt_LionLead should be here)
+        const knowledge = await getKnowledgeBase(folderId);
+
+        // 2. List ALL files in Library to see Replit folder structure
+        let libraryStructure = [];
         try {
-            JSON.parse(serviceAccountKey);
+            const folderRes = await drive.files.list({
+                q: `'${folderId}' in parents and name = 'Library' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
+                fields: 'files(id)',
+            });
+
+            if (folderRes.data.files.length > 0) {
+                const libraryId = folderRes.data.files[0].id;
+                const filesRes = await drive.files.list({
+                    q: `'${libraryId}' in parents and trashed = false`,
+                    fields: 'files(id, name, mimeType)',
+                });
+                libraryStructure = filesRes.data.files;
+            }
         } catch (e) {
-            throw new Error('GOOGLE_SERVICE_ACCOUNT_KEY is not valid JSON. Please check for extra quotes or missing brackets.');
+            libraryStructure = [`Error listing files: ${e.message}`];
         }
 
-        const result = await initializeDrive(folderId);
-
-        if (!result.success) {
-            return res.status(500).json(result);
-        }
-
-        res.status(200).json(result);
+        res.status(200).json({
+            prompt_doc_content: knowledge,
+            library_files: libraryStructure
+        });
 
     } catch (error) {
-        console.error("Setup Endpoint Error:", error);
+        console.error("Inspector Error:", error);
         res.status(500).json({
-            error: 'Setup Failed',
-            details: error.message,
-            stack: error.stack
+            error: 'Inspection Failed',
+            details: error.message
         });
     }
 };
