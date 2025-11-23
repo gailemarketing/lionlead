@@ -48,5 +48,23 @@ module.exports = async (req, res) => {
     if (!day || !role || !theme) {
         return res.status(400).json({ error: 'Missing day, role, or theme in request body' });
     }
-}
+
+    const finalPrompt = MASTER_PROMPT
+        .replace('{DAY_X}', day)
+        .replace('{USER_ROLE}', role)
+        .replace('{WEEK_THEME}', theme);
+
+    try {
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash", generationConfig: { responseMimeType: "application/json" } });
+        const result = await model.generateContent([
+            finalPrompt,
+            `Сгенерируй контент для ${day} и роли ${role}.`
+        ]);
+        const text = result.response.text();
+        const content = JSON.parse(text);
+        res.status(200).json(content);
+    } catch (error) {
+        console.error("Google Gemini API Error:", error);
+        res.status(500).json({ error: 'Failed to generate coaching content.', details: error.message });
+    }
 };
