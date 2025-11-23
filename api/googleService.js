@@ -10,24 +10,36 @@ const getAuthClient = () => {
 };
 
 // 1. Fetch Master Prompt from Drive
+// 1. Fetch Master Prompt from Drive
 async function getMasterPrompt(folderId) {
     try {
         const auth = getAuthClient();
         const drive = google.drive({ version: 'v3', auth });
 
-        // Search for 'master_prompt.txt' in the specific folder
+        // Search for 'master_prompt' (Doc) or 'master_prompt.txt' (Text)
         const res = await drive.files.list({
-            q: `'${folderId}' in parents and name = 'master_prompt.txt' and trashed = false`,
-            fields: 'files(id, name)',
+            q: `'${folderId}' in parents and (name = 'master_prompt' or name = 'master_prompt.txt') and trashed = false`,
+            fields: 'files(id, name, mimeType)',
         });
 
         if (res.data.files.length > 0) {
-            const fileId = res.data.files[0].id;
-            const fileContent = await drive.files.get({
-                fileId: fileId,
-                alt: 'media',
-            });
-            return fileContent.data;
+            const file = res.data.files[0];
+
+            if (file.mimeType === 'application/vnd.google-apps.document') {
+                // Export Google Doc as text
+                const exportRes = await drive.files.export({
+                    fileId: file.id,
+                    mimeType: 'text/plain',
+                });
+                return exportRes.data;
+            } else {
+                // Download plain text file
+                const fileContent = await drive.files.get({
+                    fileId: file.id,
+                    alt: 'media',
+                });
+                return fileContent.data;
+            }
         }
     } catch (error) {
         console.error('Error fetching master prompt:', error.message);

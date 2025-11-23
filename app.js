@@ -19,17 +19,30 @@ const JOURNEY_DATA = [
 
 // Init
 document.addEventListener('DOMContentLoaded', () => {
-    lucide.createIcons();
+    try {
+        if (typeof lucide === 'undefined') {
+            throw new Error("Lucide icons library failed to load.");
+        }
+        lucide.createIcons();
 
-    // Check LocalStorage
-    const savedUser = localStorage.getItem('lionlead_user');
-    if (savedUser) {
-        state.user = JSON.parse(savedUser);
-        renderDashboard();
-    } else {
-        renderHome();
+        // Check LocalStorage
+        const savedUser = localStorage.getItem('lionlead_user');
+        if (savedUser) {
+            state.user = JSON.parse(savedUser);
+            renderDashboard();
+        } else {
+            renderHome();
+        }
+    } catch (e) {
+        document.body.innerHTML = `<div style="color:red; padding:20px;"><h1>Application Error</h1><p>${e.message}</p><pre>${e.stack}</pre></div>`;
+        console.error("App Init Error:", e);
     }
 });
+
+window.onerror = function (msg, url, lineNo, columnNo, error) {
+    document.body.innerHTML += `<div style="color:red; padding:20px; border-top:1px solid #ccc;"><h3>Global Error</h3><p>${msg}</p><p>Line: ${lineNo}</p></div>`;
+    return false;
+};
 
 // --- Views ---
 
