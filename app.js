@@ -39,79 +39,8 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error("App Init Error:", e);
     }
 });
-
-window.onerror = function (msg, url, lineNo, columnNo, error) {
-    document.body.innerHTML += `<div style="color:red; padding:20px; border-top:1px solid #ccc;"><h3>Global Error</h3><p>${msg}</p><p>Line: ${lineNo}</p></div>`;
-    return false;
-};
-
-// --- Navigation ---
-
-function switchTab(tab) {
-    state.currentTab = tab;
-    renderApp();
-}
-
-function renderNav() {
-    const tabs = [
-        { id: 'journey', label: 'Journey', icon: 'map' },
-        { id: 'coach', label: 'Coach', icon: 'bot' },
-        { id: 'practice', label: 'Practice', icon: 'dumbbell' }
-    ];
-
-    // Desktop Nav (Top)
-    const desktopNav = `
-        <div class="hidden md:flex items-center justify-center gap-4 mb-8">
-            ${tabs.map(tab => `
-                <button onclick="switchTab('${tab.id}')" class="flex items-center gap-2 px-6 py-3 rounded-full font-bold transition-all ${state.currentTab === tab.id ? 'bg-primary text-primary-foreground shadow-lg scale-105' : 'bg-card text-muted-foreground hover:bg-secondary'}">
-                    <i data-lucide="${tab.icon}" class="w-5 h-5"></i>
-                    ${tab.label}
-                </button>
-            `).join('')}
-        </div>
-    `;
-
-    // Mobile Nav (Bottom) - Injected into #mobile-nav
-    const mobileNavContainer = document.getElementById('mobile-nav');
-    if (mobileNavContainer) {
-        mobileNavContainer.classList.remove('hidden');
-        mobileNavContainer.innerHTML = tabs.map(tab => `
-            <button onclick="switchTab('${tab.id}')" class="flex flex-col items-center gap-1 ${state.currentTab === tab.id ? 'text-primary' : 'text-muted-foreground'}">
-                <i data-lucide="${tab.icon}" class="w-6 h-6"></i>
-                <span class="text-xs font-medium">${tab.label}</span>
-            </button>
-        `).join('');
-    }
-
-    return desktopNav;
-}
-
-// --- Main Render ---
-
-function renderApp() {
-    const app = document.getElementById('app');
-
-    let content = '';
-    switch (state.currentTab) {
-        case 'journey':
-            content = renderJourney();
-            break;
-        case 'coach':
-            content = renderCoach();
-            break;
-        case 'practice':
-            content = renderPractice();
-            break;
-    }
-
-    app.innerHTML = `
-        ${renderNav()}
-        <div class="animate-in fade-in duration-300">
-            ${content}
-        </div>
-    `;
-    lucide.createIcons();
-    if (state.currentTab === 'coach') scrollToBottom();
+lucide.createIcons();
+if (state.currentTab === 'coach') scrollToBottom();
 }
 
 // --- Views ---
