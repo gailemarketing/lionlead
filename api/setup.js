@@ -1,77 +1,24 @@
-const { initializeDrive, getKnowledgeBase } = require('./googleService');
-const { google } = require('googleapis');
-const AdmZip = require('adm-zip');
+const { getKnowledgeBase } = require('./googleService');
 
 module.exports = async (req, res) => {
     try {
         const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
-        const serviceAccountKey = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
-
-        if (!folderId || !serviceAccountKey) {
-            return res.status(500).json({ error: 'Missing Environment Variables' });
+        if (!folderId) {
+            return res.status(500).json({ error: 'Missing GOOGLE_DRIVE_FOLDER_ID' });
         }
 
-        const credentials = JSON.parse(serviceAccountKey);
-        const auth = new google.auth.GoogleAuth({
-            credentials,
-            scopes: ['https://www.googleapis.com/auth/drive.readonly'],
-        });
-        const drive = google.drive({ version: 'v3', auth });
-
-        // 1. Find the ZIP file in Library
-        let zipContent = {};
-        try {
-            const folderRes = await drive.files.list({
-                q: `'${folderId}' in parents and name = 'Library' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
-                fields: 'files(id)',
-            });
-
-            if (folderRes.data.files.length > 0) {
-                const libraryId = folderRes.data.files[0].id;
-                const filesRes = await drive.files.list({
-                    q: `'${libraryId}' in parents and name contains '.zip' and trashed = false`,
-                    fields: 'files(id, name)',
-                });
-
-                if (filesRes.data.files.length > 0) {
-                    const zipFileId = filesRes.data.files[0].id;
-
-                    // Download ZIP
-                    const response = await drive.files.get({
-                        fileId: zipFileId,
-                        alt: 'media',
-                    }, { responseType: 'arraybuffer' });
-
-                    const zip = new AdmZip(Buffer.from(response.data));
-                    const zipEntries = zip.getEntries();
-
-                    zipContent.debug_logs = zipEntries.map(e => e.entryName);
-
-                    zipEntries.forEach(entry => {
-                        if (!entry.isDirectory) {
-                            // Capture specific React files to avoid size limits
-                            if (entry.entryName.endsWith('App.tsx') ||
-                                entry.entryName.endsWith('ai-coach.tsx') ||
-                                entry.entryName.endsWith('onboarding-form.tsx') ||
-                                entry.entryName.endsWith('journey-view.tsx')) {
-                                zipContent[entry.entryName] = zip.readAsText(entry);
-                            }
-                        }
-                    });
-                }
-            }
-        } catch (e) {
-            zipContent = { error: `ZIP Inspection Failed: ${e.message}` };
-        }
+        // Fetch Knowledge Base Content
+        // This function reads all text/doc files in the 'Library' folder
+        const knowledge = await getKnowledgeBase(folderId);
 
         res.status(200).json({
-            zip_content: zipContent
+            knowledge_content: knowledge
         });
 
     } catch (error) {
-        console.error("Inspector Error:", error);
+        console.error("Setup Error:", error);
         res.status(500).json({
-            error: 'Inspection Failed',
+            error: 'Setup Failed',
             details: error.message
         });
     }

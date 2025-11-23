@@ -1,189 +1,101 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
-    <title>LionLead – Leadership Onboarding Companion</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+    <title>LionLead - Leadership Onboarding</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap"
+        rel="stylesheet">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        background: "hsl(40 30% 97%)",
+                        foreground: "hsl(20 10% 15%)",
+                        card: "hsl(0 0% 100%)",
+                        "card-foreground": "hsl(20 10% 15%)",
+                        popover: "hsl(0 0% 100%)",
+                        "popover-foreground": "hsl(20 10% 15%)",
+                        primary: "hsl(45 100% 50%)",
+                        "primary-foreground": "hsl(20 20% 10%)",
+                        secondary: "hsl(35 30% 90%)",
+                        "secondary-foreground": "hsl(20 10% 15%)",
+                        muted: "hsl(35 20% 92%)",
+                        "muted-foreground": "hsl(20 5% 45%)",
+                        accent: "hsl(25 90% 65%)",
+                        "accent-foreground": "hsl(0 0% 100%)",
+                        destructive: "hsl(0 84% 60%)",
+                        "destructive-foreground": "hsl(0 0% 98%)",
+                        border: "hsl(35 15% 85%)",
+                        input: "hsl(35 15% 85%)",
+                        ring: "hsl(45 100% 50%)",
+                    },
+                    fontFamily: {
+                        sans: ['DM Sans', 'sans-serif'],
+                        heading: ['Space Grotesk', 'sans-serif'],
+                    },
+                    borderRadius: {
+                        lg: "1rem",
+                        md: "calc(1rem - 2px)",
+                        sm: "calc(1rem - 4px)",
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
     <style>
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f4f4f9;
-            color: #333;
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
+            font-family: 'DM Sans', sans-serif;
+            background-color: hsl(40 30% 97%);
+            color: hsl(20 10% 15%);
         }
 
-        header {
-            text-align: center;
-            margin-bottom: 40px;
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6 {
+            font-family: 'Space Grotesk', sans-serif;
         }
 
-        h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
         }
 
-        #setup-form,
-        #daily-card {
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
         }
 
-        input,
-        select,
-        button {
-            width: 100%;
-            padding: 12px;
-            margin-bottom: 15px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 1rem;
-        }
-
-        button {
-            background-color: #333;
-            color: white;
-            cursor: pointer;
-            font-weight: bold;
-        }
-
-        button:hover {
-            background-color: #555;
-        }
-
-        .actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 20px;
-        }
-
-        .actions button {
-            flex: 1;
+        .mask-fade {
+            mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
         }
     </style>
 </head>
 
-<body>
-    <header>
-        <h1>🦁 LionLead</h1>
-        <p>Ваш AI-компаньон для первых 30 дней лидерства.</p>
-    </header>
+<body class="antialiased min-h-screen flex flex-col">
 
-    <div id="setup-form">
-        <h2>Начнем?</h2>
-        <input type="text" id="user-name" placeholder="Ваше имя">
-        <select id="user-role">
-            <option value="Product Lead">Product Lead</option>
-            <option value="Engineering Lead">Engineering Lead</option>
-        </select>
-        <button onclick="startJourney()">Начать</button>
+    <div id="app" class="flex-1 p-4 md:p-8 max-w-7xl mx-auto w-full">
+        <!-- Content will be injected here by app.js -->
     </div>
 
-    <div id="daily-card" style="display: none;">
-        <h3 id="day-title">Day X</h3>
-        <p id="insight"></p>
-        <p id="action"></p>
-        <p id="script"></p>
-        <p id="reflection-question"></p>
-        <div class="actions">
-            <button onclick="nextDay('done')">✅ Done</button>
-            <button onclick="requestHelp()">🤔 Need help (Future MVP)</button>
-            <button onclick="nextDay('skip')">⏭️ Skip</button>
-        </div>
-    </div>
-
-    <script>
-        // === ЛОГИКА ФРОНТЕНДА (JS) ===
-
-        // 1. Установите URL вашей Serverless Function Vercel
-        const API_ENDPOINT = '/api/coach';
-
-        let currentDay = 1;
-
-        // Generate or retrieve User ID
-        let userId = localStorage.getItem('lionlead_user_id');
-        if (!userId) {
-            userId = 'user_' + Math.random().toString(36).substr(2, 9);
-            localStorage.setItem('lionlead_user_id', userId);
-        }
-        console.log("User ID:", userId);
-
-        function getWeekTheme(day) {
-            if (day >= 1 && day <= 7) return "Identity Shift & Expectations";
-            if (day >= 8 && day <= 14) return "Communication & Transparency";
-            if (day >= 15 && day <= 21) return "Feedback & Trust";
-            if (day >= 22 && day <= 28) return "Delegation, Priorities & Boundaries";
-            return "Reflection & Next-Month Plan";
-        }
-
-        // Загрузка данных (имитация Session Storage)
-        function loadProgress() {
-            // Здесь должна быть логика загрузки из localStorage
-            // Для MVP просто начнем с Day 1
-            document.getElementById('setup-form').style.display = 'block';
-            document.getElementById('daily-card').style.display = 'none';
-        }
-
-        async function startJourney() {
-            const role = document.getElementById('user-role').value;
-            // Сохраняем прогресс (role, currentDay = 1) в localStorage
-
-            document.getElementById('setup-form').style.display = 'none';
-            document.getElementById('daily-card').style.display = 'block';
-            await loadDailyContent(currentDay, role);
-        }
-
-        async function loadDailyContent(day, role) {
-            const theme = getWeekTheme(day);
-            document.getElementById('day-title').textContent = `Day ${day} of 30`;
-            document.getElementById('insight').textContent = "Loading...";
-
-            // Вызов Serverless Function
-            try {
-                const response = await fetch(API_ENDPOINT, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ day: `Day ${day}`, role: role, theme: theme, userId: userId })
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({}));
-                    throw new Error(errorData.details || errorData.error || `API Error: ${response.status}`);
-                }
-
-                const data = await response.json();
-
-                // Отображение данных
-                document.getElementById('day-title').textContent = data.day_title;
-                document.getElementById('insight').innerHTML = `<strong>Insight:</strong> ${data.insight}`;
-                document.getElementById('action').innerHTML = `<strong>Action:</strong> ${data.micro_action}`;
-                document.getElementById('script').innerHTML = data.suggested_script ? `<strong>Script:</strong> ${data.suggested_script}` : '';
-                document.getElementById('reflection-question').innerHTML = `<strong>Reflection:</strong> ${data.reflection_question}`;
-
-            } catch (error) {
-                console.error("Error loading content:", error);
-                document.getElementById('insight').innerHTML = `<strong>Ошибка:</strong> ${error.message || 'Проверьте API.'}`;
-            }
-        }
-
-        function nextDay(action) {
-            // Логика для Done/Skip: сохранение прогресса, увеличение дня
-            currentDay++;
-            if (currentDay <= 30) {
-                const role = document.getElementById('user-role').value; // Загрузить из localStorage
-                loadDailyContent(currentDay, role);
-            } else {
-                alert("Поздравляем! Вы завершили 30-дневный путь LionLead!");
-                // Переход на страницу завершения
-            }
-        }
-
-        // Запускаем при загрузке страницы
-        loadProgress(); 
-    </script>
+    <script src="app.js"></script>
 </body>
 
 </html>

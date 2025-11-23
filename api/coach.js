@@ -1,42 +1,19 @@
-// Импорт OpenAI
-// Установите библиотеку OpenAI: npm install openai
 const OpenAI = require('openai');
 const { getMasterPrompt, getKnowledgeBase, getUserProgress } = require('./googleService');
 
-// Инициализируем OpenAI API. Ключ будет взят из переменных окружения Vercel
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
 });
 
-// Default Master Prompt (fallback)
 const DEFAULT_MASTER_PROMPT = `
-Ты — LionLead, AI-компаньон для новоиспеченных менеджеров.
-Твоя миссия: предоставлять ежедневную микро-тренировку (один инсайт + одно действие) в течение первых 30 дней.
-Твой тон: теплый, мотивирующий, практичный, краткий. Ты используешь метафору льва/прайда (команда, лидерство).
-Крайне важно: общая длина контента (кроме заголовка) должна быть в пределах 110–130 слов.
-Никогда не используй приветствия.
-
-Вам переданы переменные:
-{DAY_X}: Текущий день в цикле 30 дней (например, Day 5).
-{USER_ROLE}: Роль пользователя (например, Engineering Lead).
-{WEEK_THEME}: Тема недели (например, Identity Shift & Expectations).
-
-Сгенерируй только один JSON объект с контентом дня. Строго следуй этому формату JSON. Не добавляй никаких других комментариев, текста или пояснений вне этого JSON-блока.
-
-Формат вывода:
-{
-  "day_title": "Day {DAY_X} – {WEEK_THEME}",
-  "insight": "Короткий, мотивирующий инсайт о лидерстве, адаптированный под {USER_ROLE}, макс. 2 предложения.",
-  "micro_action": "Одно конкретное, реальное действие, которое пользователь должен выполнить сегодня. Фокусируйся на {USER_ROLE}.",
-  "suggested_script": "Опциональный, но полезный пример фразы или скрипта для применения micro_action (если применимо, иначе оставь пустым).",
-  "reflection_question": "Один вопрос для рефлексии (1 предложение)."
-}
+You are LionLead, an AI leadership coach.
+Your goal is to support new managers in their first 30 days.
+Be warm, practical, and concise.
 `;
 
-// Функция-обработчик (Lambda-функция)
 module.exports = async (req, res) => {
-    // Устанавливаем CORS заголовки для безопасности
-    res.setHeader('Access-Control-Allow-Origin', '*'); // В идеале здесь должен быть ваш домен
+    // CORS Headers
+    res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
@@ -44,84 +21,86 @@ module.exports = async (req, res) => {
         return res.status(200).end();
     }
 
-    // Проверка метода и получение данных
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Only POST method is allowed' });
     }
 
-    // Извлекаем данные, которые приходят с фронтенда (лендинга)
-    const { day, role, theme, userId } = req.body;
+    try {
+        const { message, userId, day, role, theme } = req.body;
 
-    if (!day || !role || !theme) {
-        return res.status(400).json({ error: 'Missing day, role, or theme in request body' });
-    }
+        // 2. Fetch Dynamic Content from Drive
+        let masterPrompt = DEFAULT_MASTER_PROMPT;
+        let knowledgeContext = "";
+        let userProgressContext = "";
 
-    // --- GOOGLE DRIVE INTEGRATION ---
-    const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
-    let masterPrompt = DEFAULT_MASTER_PROMPT;
-    let knowledgeContext = "";
-    let userProgressContext = "";
-
-    if (folderId && process.env.GOOGLE_SERVICE_ACCOUNT_KEY) {
         try {
-            // 1. Try to fetch dynamic prompt
-            const drivePrompt = await getMasterPrompt(folderId);
-            if (drivePrompt) {
-                masterPrompt = drivePrompt;
-                console.log("Loaded Master Prompt from Drive");
-            }
+            const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
+            if (folderId) {
+                const [promptText, knowledgeText, progressData] = await Promise.all([
+                    getMasterPrompt(folderId),
+                    getKnowledgeBase(folderId),
+                    getUserProgress(folderId)
+                ]);
 
-            // 2. Fetch Knowledge Base
-            const knowledge = await getKnowledgeBase(folderId);
-            if (knowledge) {
-                knowledgeContext = `\n\n[KNOWLEDGE BASE]\nUse the following information to inform your advice:\n${knowledge}`;
-                console.log("Loaded Knowledge Base from Drive");
-            }
+                if (promptText) masterPrompt = promptText;
+                if (knowledgeText) knowledgeContext = `\n\nReference Materials:\n${knowledgeText}`;
 
-            // 3. Fetch User Progress (if userId provided)
-            if (userId) {
-                const progress = await getUserProgress(folderId, userId);
-                if (progress) {
-                    userProgressContext = `\n\n[USER PROGRESS]\n${progress}`;
-                    console.log("Loaded User Progress from Sheets");
+                // Filter progress for this user
+                if (progressData && userId) {
+                    const userRows = progressData.filter(row => row[0] === userId);
+                    if (userRows.length > 0) {
+                        userProgressContext = `\n\nUser History:\n${JSON.stringify(userRows)}`;
+                    }
                 }
             }
-
-        } catch (e) {
-            console.error("Drive Integration Failed (using defaults):", e.message);
+        } catch (driveError) {
+            console.warn("Drive Fetch Error:", driveError);
+            // Continue with defaults
         }
-    }
-    // --------------------------------
 
+        // 3. Construct System Prompt
+        const finalSystemPrompt = `${masterPrompt}\n${knowledgeContext}\n${userProgressContext}`;
 
-    // Заменяем переменные в Master Prompt на фактические данные пользователя
-    // Append contexts to the prompt
-    const finalSystemPrompt = masterPrompt + knowledgeContext + userProgressContext;
+        // 4. Call OpenAI
+        let messages = [];
+        let responseFormat = null;
 
-    const finalUserPrompt = finalSystemPrompt
-        .replace('{DAY_X}', day)
-        .replace('{USER_ROLE}', role)
-        .replace('{WEEK_THEME}', theme);
+        if (message) {
+            // CHAT MODE
+            messages = [
+                { role: "system", content: finalSystemPrompt },
+                { role: "user", content: message }
+            ];
+        } else {
+            // DAILY CONTENT MODE (Legacy/Fallback)
+            if (!day || !role || !theme) {
+                return res.status(400).json({ error: 'Missing day, role, or theme for daily content generation.' });
+            }
+            messages = [
+                { role: "system", content: finalSystemPrompt },
+                { role: "user", content: `Generate content for Day ${day}, Role: ${role}, Theme: ${theme}. Return JSON.` }
+            ];
+            responseFormat = { type: "json_object" };
+        }
 
-    try {
-        const response = await openai.chat.completions.create({
-            model: "gpt-4o-mini", // Идеальный выбор по скорости и стоимости
-            messages: [
-                { role: "system", content: finalSystemPrompt }, // Send the full system context
-                { role: "user", content: `Сгенерируй контент для ${day} и роли ${role}. Тема: ${theme}.` } // Explicit user instruction
-            ],
-            response_format: { type: "json_object" }, // Требуем JSON-вывод
+        const completion = await openai.chat.completions.create({
+            model: "gpt-4o-mini",
+            messages: messages,
+            response_format: responseFormat,
             temperature: 0.7,
         });
 
-        // Парсим JSON из ответа AI
-        const content = JSON.parse(response.choices[0].message.content);
+        const aiResponse = completion.choices[0].message.content;
 
-        // Отправляем чистый JSON контент обратно на фронтенд
-        res.status(200).json(content);
+        // 5. Return Response
+        if (message) {
+            res.status(200).json({ reply: aiResponse });
+        } else {
+            res.status(200).json(JSON.parse(aiResponse));
+        }
 
     } catch (error) {
-        console.error("OpenAI API Error:", error.message);
-        res.status(500).json({ error: 'Failed to generate coaching content.', details: error.message });
+        console.error("Coach API Error:", error);
+        res.status(500).json({ error: "Failed to generate coaching response", details: error.message });
     }
 };
