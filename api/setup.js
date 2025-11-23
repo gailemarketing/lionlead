@@ -1,4 +1,4 @@
-const { getKnowledgeBase } = require('./googleService');
+const { getKnowledgeBase, initializeDrive } = require('./googleService');
 
 module.exports = async (req, res) => {
     try {
@@ -7,11 +7,14 @@ module.exports = async (req, res) => {
             return res.status(500).json({ error: 'Missing GOOGLE_DRIVE_FOLDER_ID' });
         }
 
+        // Initialize Drive (Create defaults & Debug Write Test)
+        const initResult = await initializeDrive(folderId);
+
         // Fetch Knowledge Base Content
-        // This function reads all text/doc files in the 'Library' folder
         const knowledge = await getKnowledgeBase(folderId);
 
         res.status(200).json({
+            init_result: initResult,
             knowledge_content: knowledge
         });
 

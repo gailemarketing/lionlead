@@ -145,6 +145,20 @@ async function initializeDrive(folderId) {
     const logs = [];
 
     try {
+        // DEBUG: Try to create a timestamped file to verify write access
+        const debugFileName = `debug_write_${Date.now()}.txt`;
+        await drive.files.create({
+            requestBody: {
+                name: debugFileName,
+                parents: [folderId],
+                mimeType: 'text/plain',
+            },
+            media: {
+                mimeType: 'text/plain',
+                body: 'Debug write test from Vercel deployment.',
+            }
+        });
+        logs.push(`DEBUG: Successfully created ${debugFileName}`);
         // A. Check/Create master_prompt.txt
         const promptRes = await drive.files.list({
             q: `'${folderId}' in parents and name = 'master_prompt.txt' and trashed = false`,
