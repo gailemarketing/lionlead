@@ -140,27 +140,36 @@ function renderHome() {
         </div>
 
         <!-- Onboarding Modal -->
-        <div id="onboarding-modal" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm hidden flex items-center justify-center p-4">
-            <div class="bg-card w-full max-w-lg rounded-[2rem] shadow-2xl p-8 animate-in slide-in-from-bottom-10 duration-300">
-                <div class="text-center space-y-4 mb-8">
-                    <h2 class="text-3xl font-heading font-bold">Welcome Aboard</h2>
-                    <p class="text-lg text-muted-foreground">Let's get you set up.</p>
+        <div id="onboarding-modal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+            <div class="relative bg-card w-[90%] max-w-md rounded-3xl shadow-2xl p-6 md:p-8 animate-in slide-in-from-bottom-10 duration-300 border border-border/50">
+                
+                <!-- Close Button -->
+                <button onclick="closeOnboarding()" class="absolute top-4 right-4 p-2 rounded-full hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+
+                <div class="text-center space-y-2 mb-6">
+                    <div class="w-12 h-12 bg-primary/20 rounded-full mx-auto flex items-center justify-center mb-3">
+                        <span class="text-2xl">👋</span>
+                    </div>
+                    <h2 class="text-2xl font-heading font-bold">Welcome Aboard</h2>
+                    <p class="text-sm text-muted-foreground">Let's personalize your experience.</p>
                 </div>
 
-                <form onsubmit="handleOnboardingSubmit(event)" class="space-y-6">
-                    <div class="space-y-2">
-                        <label class="text-base font-semibold">Name</label>
-                        <input type="text" name="name" required class="w-full h-12 px-4 rounded-xl bg-muted/30 border border-muted focus:border-primary outline-none" placeholder="Your first name">
+                <form onsubmit="handleOnboardingSubmit(event)" class="space-y-4">
+                    <div class="space-y-1.5">
+                        <label class="text-sm font-semibold ml-1">Name</label>
+                        <input type="text" name="name" required class="w-full h-11 px-4 rounded-xl bg-muted/30 border border-muted focus:border-primary outline-none transition-all text-sm" placeholder="Your first name">
                     </div>
 
-                    <div class="space-y-2">
-                        <label class="text-base font-semibold">Company Email</label>
-                        <input type="email" name="email" required class="w-full h-12 px-4 rounded-xl bg-muted/30 border border-muted focus:border-primary outline-none" placeholder="you@company.com">
+                    <div class="space-y-1.5">
+                        <label class="text-sm font-semibold ml-1">Company Email</label>
+                        <input type="email" name="email" required class="w-full h-11 px-4 rounded-xl bg-muted/30 border border-muted focus:border-primary outline-none transition-all text-sm" placeholder="you@company.com">
                     </div>
                     
-                    <div class="space-y-2">
-                        <label class="text-base font-semibold">Role</label>
-                        <select name="role" class="w-full h-12 px-4 rounded-xl bg-muted/30 border border-muted outline-none">
+                    <div class="space-y-1.5">
+                        <label class="text-sm font-semibold ml-1">Role</label>
+                        <select name="role" class="w-full h-11 px-4 rounded-xl bg-muted/30 border border-muted outline-none transition-all text-sm">
                             <option>Product Lead</option>
                             <option>Engineering Manager</option>
                             <option>Team Lead</option>
@@ -168,7 +177,7 @@ function renderHome() {
                         </select>
                     </div>
 
-                    <button type="submit" class="w-full h-14 rounded-full bg-primary text-primary-foreground font-bold text-lg hover:bg-primary/90 hover:scale-[1.02] transition-all shadow-lg">
+                    <button type="submit" class="w-full h-12 rounded-full bg-primary text-primary-foreground font-bold text-base hover:bg-primary/90 hover:scale-[1.02] transition-all shadow-lg mt-2">
                         Start My 30 Days
                     </button>
                 </form>
@@ -180,6 +189,10 @@ function renderHome() {
 
 function showOnboarding() {
     document.getElementById('onboarding-modal').classList.remove('hidden');
+}
+
+function closeOnboarding() {
+    document.getElementById('onboarding-modal').classList.add('hidden');
 }
 
 function handleOnboardingSubmit(e) {
