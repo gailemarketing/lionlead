@@ -1,4 +1,4 @@
-const { getKnowledgeBase, initializeDrive } = require('./googleService');
+const { getKnowledgeBase, initializeDrive, testEditFile } = require('./googleService');
 
 module.exports = async (req, res) => {
     try {
@@ -10,11 +10,15 @@ module.exports = async (req, res) => {
         // Initialize Drive (Create defaults & Debug Write Test)
         const initResult = await initializeDrive(folderId);
 
+        // Test Edit Access
+        const editResult = await testEditFile(folderId);
+
         // Fetch Knowledge Base Content
         const knowledge = await getKnowledgeBase(folderId);
 
         res.status(200).json({
             init_result: initResult,
+            edit_result: editResult,
             knowledge_content: knowledge
         });
 

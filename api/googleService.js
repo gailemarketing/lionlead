@@ -291,10 +291,49 @@ async function getJourneyData(folderId) {
     return days.sort((a, b) => a.day - b.day);
 }
 
+// 6. Test Edit Access
+async function testEditFile(folderId) {
+    try {
+        const auth = getAuthClient();
+        const drive = google.drive({ version: 'v3', auth });
+
+        // Find 'test_edit.txt'
+        const res = await drive.files.list({
+            q: `'${folderId}' in parents and name = 'test_edit.txt' and trashed = false`,
+            fields: 'files(id, name)',
+        });
+
+        if (res.data.files.length === 0) {
+            return { success: false, error: "File 'test_edit.txt' not found." };
+        }
+
+        const fileId = res.data.files[0].id;
+
+        // Append content (Drive API update overwrites, so we append to existing?)
+        // Actually, for text files, 'update' replaces content. To append, we'd need to read first.
+        // For simplicity in this test, we will just OVERWRITE with a timestamp message.
+
+        await drive.files.update({
+            fileId: fileId,
+            media: {
+                mimeType: 'text/plain',
+                body: `LionLead Edit Test Successful at ${new Date().toISOString()}`,
+            },
+        });
+
+        return { success: true, message: `Successfully edited file ${fileId}` };
+
+    } catch (error) {
+        console.error("Edit Test Failed:", error);
+        return { success: false, error: error.message };
+    }
+}
+
 module.exports = {
     getMasterPrompt,
     getKnowledgeBase,
     getUserProgress,
     initializeDrive,
-    getJourneyData
+    getJourneyData,
+    testEditFile
 };
