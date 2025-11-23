@@ -368,9 +368,29 @@ async function testSheetWrite(folderId) {
 
         return { success: true, message: `Successfully appended row to Sheet ${spreadsheetId}` };
 
+        return { success: true, message: `Successfully appended row to Sheet ${spreadsheetId}` };
+
     } catch (error) {
         console.error("Sheet Write Test Failed:", error);
         return { success: false, error: error.message };
+    }
+}
+
+// 8. Debug: List all files in folder
+async function debugListFiles(folderId) {
+    try {
+        const auth = getAuthClient();
+        const drive = google.drive({ version: 'v3', auth });
+
+        const res = await drive.files.list({
+            q: `'${folderId}' in parents and trashed = false`,
+            fields: 'files(id, name, mimeType)',
+            pageSize: 20
+        });
+
+        return res.data.files;
+    } catch (error) {
+        return [{ error: error.message }];
     }
 }
 
@@ -381,5 +401,6 @@ module.exports = {
     initializeDrive,
     getJourneyData,
     testEditFile,
-    testSheetWrite
+    testSheetWrite,
+    debugListFiles
 };

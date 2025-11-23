@@ -1,4 +1,4 @@
-const { getKnowledgeBase, initializeDrive, testEditFile, testSheetWrite } = require('./googleService');
+const { getKnowledgeBase, initializeDrive, testEditFile, testSheetWrite, debugListFiles } = require('./googleService');
 
 module.exports = async (req, res) => {
     try {
@@ -16,6 +16,9 @@ module.exports = async (req, res) => {
         // Test Sheet Write Access
         const sheetResult = await testSheetWrite(folderId);
 
+        // Debug: List all files
+        const visibleFiles = await debugListFiles(folderId);
+
         // Fetch Knowledge Base Content
         const knowledge = await getKnowledgeBase(folderId);
 
@@ -23,6 +26,7 @@ module.exports = async (req, res) => {
             init_result: initResult,
             edit_result: editResult,
             sheet_result: sheetResult,
+            visible_files_in_folder: visibleFiles,
             knowledge_content: knowledge
         });
 
