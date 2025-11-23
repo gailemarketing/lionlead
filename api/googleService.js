@@ -323,8 +323,53 @@ async function testEditFile(folderId) {
 
         return { success: true, message: `Successfully edited file ${fileId}` };
 
+        return { success: true, message: `Successfully edited file ${fileId}` };
+
     } catch (error) {
         console.error("Edit Test Failed:", error);
+        return { success: false, error: error.message };
+    }
+}
+
+// 7. Test Sheet Write Access
+async function testSheetWrite(folderId) {
+    try {
+        const auth = getAuthClient();
+        const drive = google.drive({ version: 'v3', auth });
+        const sheets = google.sheets({ version: 'v4', auth });
+
+        // Find 'Progress' sheet
+        const res = await drive.files.list({
+            q: `'${folderId}' in parents and name = 'Progress' and mimeType = 'application/vnd.google-apps.spreadsheet' and trashed = false`,
+            fields: 'files(id, name)',
+        });
+
+        if (res.data.files.length === 0) {
+            return { success: false, error: "Sheet 'Progress' not found." };
+        }
+
+        const spreadsheetId = res.data.files[0].id;
+
+        // Append a test row
+        await sheets.spreadsheets.values.append({
+            spreadsheetId,
+            range: 'A:E',
+            valueInputOption: 'RAW',
+            requestBody: {
+                values: [[
+                    'TEST_USER',
+                    '0',
+                    'Tester',
+                    'Write Check',
+                    new Date().toISOString()
+                ]]
+            }
+        });
+
+        return { success: true, message: `Successfully appended row to Sheet ${spreadsheetId}` };
+
+    } catch (error) {
+        console.error("Sheet Write Test Failed:", error);
         return { success: false, error: error.message };
     }
 }
@@ -335,5 +380,6 @@ module.exports = {
     getUserProgress,
     initializeDrive,
     getJourneyData,
-    testEditFile
+    testEditFile,
+    testSheetWrite
 };
