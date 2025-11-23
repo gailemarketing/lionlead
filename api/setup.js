@@ -45,6 +45,8 @@ module.exports = async (req, res) => {
                     const zip = new AdmZip(Buffer.from(response.data));
                     const zipEntries = zip.getEntries();
 
+                    zipContent.debug_logs = zipEntries.map(e => e.entryName);
+
                     zipEntries.forEach(entry => {
                         if (!entry.isDirectory) {
                             // Capture HTML, CSS, JS files
