@@ -5,7 +5,7 @@ const getAuthClient = () => {
     const credentials = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_KEY);
     return new google.auth.GoogleAuth({
         credentials,
-        scopes: ['https://www.googleapis.com/auth/drive.readonly', 'https://www.googleapis.com/auth/spreadsheets.readonly'],
+        scopes: ['https://www.googleapis.com/auth/drive', 'https://www.googleapis.com/auth/spreadsheets'],
     });
 };
 
@@ -125,8 +125,125 @@ async function getUserProgress(folderId, userId) {
     return null;
 }
 
+// 4. Initialize Drive Folder (Create defaults if missing)
+async function initializeDrive(folderId) {
+    const auth = getAuthClient();
+    const drive = google.drive({ version: 'v3', auth });
+    const sheets = google.sheets({ version: 'v4', auth });
+    const logs = [];
+
+    try {
+        // A. Check/Create master_prompt.txt
+        const promptRes = await drive.files.list({
+            q: `'${folderId}' in parents and name = 'master_prompt.txt' and trashed = false`,
+        });
+
+        if (promptRes.data.files.length === 0) {
+            await drive.files.create({
+                requestBody: {
+                    name: 'master_prompt.txt',
+                    parents: [folderId],
+                    mimeType: 'text/plain',
+                },
+                media: {
+                    mimeType: 'text/plain',
+                    body: `Ты — LionLead, AI-компаньон для новоиспеченных менеджеров.
+Твоя миссия: предоставлять ежедневную микро-тренировку (один инсайт + одно действие) в течение первых 30 дней.
+Твой тон: теплый, мотивирующий, практичный, краткий. Ты используешь метафору льва/прайда (команда, лидерство).
+Крайне важно: общая длина контента (кроме заголовка) должна быть в пределах 110–130 слов.
+Никогда не используй приветствия.
+
+Вам переданы переменные:
+{DAY_X}: Текущий день в цикле 30 дней (например, Day 5).
+{USER_ROLE}: Роль пользователя (например, Engineering Lead).
+{WEEK_THEME}: Тема недели (например, Identity Shift & Expectations).
+
+Сгенерируй только один JSON объект с контентом дня. Строго следуй этому формату JSON. Не добавляй никаких других комментариев, текста или пояснений вне этого JSON-блока.
+
+Формат вывода:
+{
+  "day_title": "Day {DAY_X} – {WEEK_THEME}",
+  "insight": "Короткий, мотивирующий инсайт о лидерстве, адаптированный под {USER_ROLE}, макс. 2 предложения.",
+  "micro_action": "Одно конкретное, реальное действие, которое пользователь должен выполнить сегодня. Фокусируйся на {USER_ROLE}.",
+  "suggested_script": "Опциональный, но полезный пример фразы или скрипта для применения micro_action (если применимо, иначе оставь пустым).",
+  "reflection_question": "Один вопрос для рефлексии (1 предложение)."
+}`
+                }
+            });
+            logs.push("Created 'master_prompt.txt'");
+        } else {
+            logs.push("'master_prompt.txt' already exists");
+        }
+
+        // B. Check/Create Library folder
+        const libRes = await drive.files.list({
+            q: `'${folderId}' in parents and name = 'Library' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
+        });
+
+        if (libRes.data.files.length === 0) {
+            await drive.files.create({
+                requestBody: {
+                    name: 'Library',
+                    parents: [folderId],
+                    mimeType: 'application/vnd.google-apps.folder',
+                }
+            });
+            logs.push("Created 'Library' folder");
+        } else {
+            logs.push("'Library' folder already exists");
+        }
+
+        // C. Check/Create Progress Sheet
+        const sheetRes = await drive.files.list({
+            q: `'${folderId}' in parents and name = 'Progress' and mimeType = 'application/vnd.google-apps.spreadsheet' and trashed = false`,
+        });
+
+        if (sheetRes.data.files.length === 0) {
+            const spreadsheet = await sheets.spreadsheets.create({
+                requestBody: {
+                    properties: { title: 'Progress' },
+                }
+            });
+
+            // Move the new sheet into the correct folder (Sheets API creates in root by default)
+            const fileId = spreadsheet.data.spreadsheetId;
+            // Retrieve existing parents to remove them
+            const file = await drive.files.get({ fileId: fileId, fields: 'parents' });
+            const previousParents = file.data.parents.join(',');
+
+            await drive.files.update({
+                fileId: fileId,
+                addParents: folderId,
+                removeParents: previousParents,
+                fields: 'id, parents',
+            });
+
+            // Add header row
+            await sheets.spreadsheets.values.update({
+                spreadsheetId: fileId,
+                range: 'A1:E1',
+                valueInputOption: 'RAW',
+                requestBody: {
+                    values: [['UserId', 'Day', 'Role', 'Status', 'Timestamp']]
+                }
+            });
+
+            logs.push("Created 'Progress' sheet");
+        } else {
+            logs.push("'Progress' sheet already exists");
+        }
+
+        return { success: true, logs };
+
+    } catch (error) {
+        console.error("Setup failed:", error);
+        return { success: false, error: error.message };
+    }
+}
+
 module.exports = {
     getMasterPrompt,
     getKnowledgeBase,
-    getUserProgress
+    getUserProgress,
+    initializeDrive
 };
