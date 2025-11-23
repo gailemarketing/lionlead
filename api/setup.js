@@ -1,5 +1,6 @@
 const { initializeDrive, getKnowledgeBase } = require('./googleService');
 const { google } = require('googleapis');
+const AdmZip = require('adm-zip');
 
 module.exports = async (req, res) => {
     try {
@@ -17,11 +18,8 @@ module.exports = async (req, res) => {
         });
         const drive = google.drive({ version: 'v3', auth });
 
-        // 1. Get Knowledge Base Content (Prompt_LionLead should be here)
-        const knowledge = await getKnowledgeBase(folderId);
-
-        // 2. List ALL files in Library to see Replit folder structure
-        let libraryStructure = [];
+        // 1. Find the ZIP file in Library
+        let zipContent = {};
         try {
             const folderRes = await drive.files.list({
                 q: `'${folderId}' in parents and name = 'Library' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
@@ -31,18 +29,38 @@ module.exports = async (req, res) => {
             if (folderRes.data.files.length > 0) {
                 const libraryId = folderRes.data.files[0].id;
                 const filesRes = await drive.files.list({
-                    q: `'${libraryId}' in parents and trashed = false`,
-                    fields: 'files(id, name, mimeType)',
+                    q: `'${libraryId}' in parents and name contains '.zip' and trashed = false`,
+                    fields: 'files(id, name)',
                 });
-                libraryStructure = filesRes.data.files;
+
+                if (filesRes.data.files.length > 0) {
+                    const zipFileId = filesRes.data.files[0].id;
+
+                    // Download ZIP
+                    const response = await drive.files.get({
+                        fileId: zipFileId,
+                        alt: 'media',
+                    }, { responseType: 'arraybuffer' });
+
+                    const zip = new AdmZip(Buffer.from(response.data));
+                    const zipEntries = zip.getEntries();
+
+                    zipEntries.forEach(entry => {
+                        if (!entry.isDirectory) {
+                            // Capture HTML, CSS, JS files
+                            if (entry.entryName.endsWith('.html') || entry.entryName.endsWith('.css') || entry.entryName.endsWith('.js')) {
+                                zipContent[entry.entryName] = zip.readAsText(entry);
+                            }
+                        }
+                    });
+                }
             }
         } catch (e) {
-            libraryStructure = [`Error listing files: ${e.message}`];
+            zipContent = { error: `ZIP Inspection Failed: ${e.message}` };
         }
 
         res.status(200).json({
-            prompt_doc_content: knowledge,
-            library_files: libraryStructure
+            zip_content: zipContent
         });
 
     } catch (error) {
