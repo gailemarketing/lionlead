@@ -49,8 +49,8 @@ module.exports = async (req, res) => {
 
                     zipEntries.forEach(entry => {
                         if (!entry.isDirectory) {
-                            // Capture HTML, CSS, JS files
-                            if (entry.entryName.endsWith('.html') || entry.entryName.endsWith('.css') || entry.entryName.endsWith('.js')) {
+                            // Capture HTML, CSS, JS, JSX, TSX files
+                            if (entry.entryName.match(/\.(html|css|js|jsx|ts|tsx)$/)) {
                                 zipContent[entry.entryName] = zip.readAsText(entry);
                             }
                         }
