@@ -1,14 +1,16 @@
-// Import Google Generative AI
-// Install with: npm install @google/generative-ai
-const { GoogleGenerativeAI } = require("@google/generative-ai");
+// Импорт OpenAI
+// Установите библиотеку OpenAI: npm install openai
+const OpenAI = require('openai');
 
-// Initialize with API key from environment
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+// Инициализируем OpenAI API. Ключ будет взят из переменных окружения Vercel
+const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+});
 
-// Master prompt (system instructions)
+// Ваш Master Prompt (система инструкций для AI)
 const MASTER_PROMPT = `
 Ты — LionLead, AI-компаньон для новоиспеченных менеджеров.
-Твоя миссия: предоставлять ежедневную микро‑тренировку (один инсайт + одно действие) в течение первых 30 дней.
+Твоя миссия: предоставлять ежедневную микро-тренировку (один инсайт + одно действие) в течение первых 30 дней.
 Твой тон: теплый, мотивирующий, практичный, краткий. Ты используешь метафору льва/прайда (команда, лидерство).
 Крайне важно: общая длина контента (кроме заголовка) должна быть в пределах 110–130 слов.
 Никогда не используй приветствия.
@@ -18,21 +20,22 @@ const MASTER_PROMPT = `
 {USER_ROLE}: Роль пользователя (например, Engineering Lead).
 {WEEK_THEME}: Тема недели (например, Identity Shift & Expectations).
 
-Сгенерируй только один JSON объект с контентом дня. Строго следуй формату JSON. Не добавляй никаких комментариев вне JSON‑блока.
+Сгенерируй только один JSON объект с контентом дня. Строго следуй этому формату JSON. Не добавляй никаких других комментариев, текста или пояснений вне этого JSON-блока.
 
 Формат вывода:
 {
   "day_title": "Day {DAY_X} – {WEEK_THEME}",
   "insight": "Короткий, мотивирующий инсайт о лидерстве, адаптированный под {USER_ROLE}, макс. 2 предложения.",
   "micro_action": "Одно конкретное, реальное действие, которое пользователь должен выполнить сегодня. Фокусируйся на {USER_ROLE}.",
-  "suggested_script": "Опциональный, но полезный пример фразы или скрипта (если применимо, иначе пусто).",
+  "suggested_script": "Опциональный, но полезный пример фразы или скрипта для применения micro_action (если применимо, иначе оставь пустым).",
   "reflection_question": "Один вопрос для рефлексии (1 предложение)."
 }
 `;
 
+// Функция-обработчик (Lambda-функция)
 module.exports = async (req, res) => {
-    // CORS headers
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    // Устанавливаем CORS заголовки для безопасности
+    res.setHeader('Access-Control-Allow-Origin', '*'); // В идеале здесь должен быть ваш домен
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
@@ -40,31 +43,43 @@ module.exports = async (req, res) => {
         return res.status(200).end();
     }
 
+    // Проверка метода и получение данных
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Only POST method is allowed' });
     }
 
+    // Извлекаем данные, которые приходят с фронтенда (лендинга)
     const { day, role, theme } = req.body;
+
     if (!day || !role || !theme) {
         return res.status(400).json({ error: 'Missing day, role, or theme in request body' });
     }
 
+    // Заменяем переменные в Master Prompt на фактические данные пользователя
     const finalPrompt = MASTER_PROMPT
         .replace('{DAY_X}', day)
         .replace('{USER_ROLE}', role)
         .replace('{WEEK_THEME}', theme);
 
     try {
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash", generationConfig: { responseMimeType: "application/json" } });
-        const result = await model.generateContent([
-            finalPrompt,
-            `Сгенерируй контент для ${day} и роли ${role}.`
-        ]);
-        const text = result.response.text();
-        const content = JSON.parse(text);
+        const response = await openai.chat.completions.create({
+            model: "gpt-4o-mini", // Идеальный выбор по скорости и стоимости
+            messages: [
+                { role: "system", content: finalPrompt },
+                { role: "user", content: `Сгенерируй контент для ${day} и роли ${role}.` } // Финальная команда
+            ],
+            response_format: { type: "json_object" }, // Требуем JSON-вывод
+            temperature: 0.7,
+        });
+
+        // Парсим JSON из ответа AI
+        const content = JSON.parse(response.choices[0].message.content);
+
+        // Отправляем чистый JSON контент обратно на фронтенд
         res.status(200).json(content);
+
     } catch (error) {
-        console.error("Google Gemini API Error:", error);
+        console.error("OpenAI API Error:", error.message);
         res.status(500).json({ error: 'Failed to generate coaching content.', details: error.message });
     }
 };
