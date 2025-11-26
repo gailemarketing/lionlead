@@ -31,7 +31,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (res.ok) {
                 const dynamicData = await res.json();
                 if (dynamicData && dynamicData.length > 0) {
-                    // Update global JOURNEY_DATA with fetched data
                     JOURNEY_DATA.length = 0;
                     JOURNEY_DATA.push(...dynamicData);
                     console.log("Loaded dynamic journey data:", JOURNEY_DATA.length, "days");
@@ -41,224 +40,95 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.warn("Failed to load dynamic journey data, using fallback.", err);
         }
 
+        // Event Listeners for Static Elements
+        const startBtn = document.getElementById('start-btn');
+        const modal = document.getElementById('onboarding-modal');
+        const modalBackdrop = document.getElementById('modal-backdrop');
+        const onboardingForm = document.getElementById('onboarding-form');
+
+        if (startBtn) {
+            startBtn.addEventListener('click', () => {
+                modal.classList.remove('hidden');
+            });
+        }
+
+        if (modalBackdrop) {
+            modalBackdrop.addEventListener('click', () => {
+                modal.classList.add('hidden');
+            });
+        }
+
+        if (onboardingForm) {
+            onboardingForm.addEventListener('submit', handleOnboardingSubmit);
+        }
+
+        // Check User State
         const savedUser = localStorage.getItem('lionlead_user');
         if (savedUser) {
             state.user = JSON.parse(savedUser);
-            renderApp();
+            showApp();
         } else {
-            renderHome();
+            showHome();
         }
     } catch (e) {
-        document.body.innerHTML = `<div style="color:red; padding:20px;"><h1>Application Error</h1><p>${e.message}</p><pre>${e.stack}</pre></div>`;
         console.error("App Init Error:", e);
     }
 });
 
-window.onerror = function (msg, url, lineNo, columnNo, error) {
-    document.body.innerHTML += `<div style="color:red; padding:20px; border-top:1px solid #ccc;"><h3>Global Error</h3><p>${msg}</p><p>Line: ${lineNo}</p></div>`;
-    return false;
-};
+function showApp() {
+    document.getElementById('hero-section').classList.add('hidden');
+    document.getElementById('app').classList.remove('hidden');
+    renderApp();
+}
 
-// --- Navigation & Header ---
+function showHome() {
+    document.getElementById('hero-section').classList.remove('hidden');
+    document.getElementById('app').classList.add('hidden');
+    document.getElementById('mobile-nav').classList.add('hidden');
+}
 
 function logout() {
     if (confirm("Are you sure you want to log out?")) {
         localStorage.removeItem('lionlead_user');
         state.user = null;
-        renderHome();
+        showHome();
     }
-}
-
-function renderHeader() {
-    return `
-        <div class="flex items-center justify-between mb-6 animate-in fade-in slide-in-from-top-4 duration-500">
-            <div class="flex items-center gap-2">
-                <div class="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center">
-                    <span class="text-lg">🦁</span>
-                </div>
-                <span class="font-heading font-bold text-lg">LionLead</span>
-            </div>
-            
-            <div class="flex items-center gap-3">
-                <div class="text-right hidden md:block">
-                    <p class="text-sm font-bold leading-none">${state.user.name}</p>
-                    <p class="text-xs text-muted-foreground">${state.user.role}</p>
-                </div>
-                <button onclick="logout()" class="p-2 rounded-full hover:bg-muted text-muted-foreground hover:text-destructive transition-colors" title="Logout">
-                    <i data-lucide="log-out" class="w-5 h-5"></i>
-                </button>
-            </div>
-        </div>
-    `;
-}
-
-function switchTab(tab) {
-    state.currentTab = tab;
-    renderApp();
-}
-
-function renderNav() {
-    const tabs = [
-        { id: 'journey', label: 'Journey', icon: 'map' },
-        { id: 'coach', label: 'Coach', icon: 'bot' },
-        { id: 'practice', label: 'Practice', icon: 'dumbbell' }
-    ];
-
-    const desktopNav = `
-        <div class="hidden md:flex items-center justify-center gap-2 mb-8 bg-muted/30 p-1 rounded-full w-fit mx-auto">
-            ${tabs.map(tab => `
-                <button onclick="switchTab('${tab.id}')" class="flex items-center gap-2 px-6 py-2 rounded-full font-bold transition-all ${state.currentTab === tab.id ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}">
-                    <i data-lucide="${tab.icon}" class="w-4 h-4"></i>
-                    ${tab.label}
-                </button>
-            `).join('')}
-        </div>
-    `;
-
-    const mobileNavContainer = document.getElementById('mobile-nav');
-    if (mobileNavContainer) {
-        mobileNavContainer.classList.remove('hidden');
-        mobileNavContainer.innerHTML = tabs.map(tab => `
-            <button onclick="switchTab('${tab.id}')" class="flex flex-col items-center gap-1 ${state.currentTab === tab.id ? 'text-primary' : 'text-muted-foreground'}">
-                <i data-lucide="${tab.icon}" class="w-6 h-6"></i>
-                <span class="text-xs font-medium">${tab.label}</span>
-            </button>
-        `).join('');
-    }
-
-    return desktopNav;
-}
-
-// --- Main Render ---
-
-function renderApp() {
-    const app = document.getElementById('app');
-
-    let content = '';
-    switch (state.currentTab) {
-        case 'journey':
-            content = renderJourney();
-            break;
-        case 'coach':
-            content = renderCoach();
-            break;
-        case 'practice':
-            content = renderPractice();
-            break;
-    }
-
-    app.innerHTML = `
-        ${renderHeader()}
-        ${renderNav()}
-        <div class="animate-in fade-in duration-300">
-            ${content}
-        </div>
-    `;
-    lucide.createIcons();
-    if (state.currentTab === 'coach') scrollToBottom();
-}
-
-// --- Views ---
-
-function renderHome() {
-    const app = document.getElementById('app');
-    app.innerHTML = `
-        <div class="flex flex-col items-center justify-center min-h-[80vh] text-center space-y-8 animate-in fade-in zoom-in duration-500">
-            <div class="w-24 h-24 bg-primary/20 rounded-full flex items-center justify-center mb-4 animate-bounce">
-                <span class="text-5xl">🦁</span>
-            </div>
-            
-            <div class="space-y-4 max-w-2xl">
-                <h1 class="text-5xl md:text-7xl font-heading font-bold tracking-tight text-foreground">
-                    LionLead
-                </h1>
-                <p class="text-xl md:text-2xl text-muted-foreground leading-relaxed">
-                    Your AI-powered companion for the first 30 days of leadership.
-                </p>
-            </div>
-
-            <button onclick="showOnboarding()" class="group relative inline-flex h-14 items-center justify-center overflow-hidden rounded-full bg-primary px-8 font-medium text-primary-foreground transition-all duration-300 hover:bg-primary/90 hover:scale-105 hover:shadow-[0_0_40px_-10px_rgba(255,200,0,0.5)]">
-                <span class="mr-2 text-lg font-bold">Start My Journey</span>
-                <i data-lucide="arrow-right" class="w-5 h-5 transition-transform group-hover:translate-x-1"></i>
-            </button>
-        </div>
-
-        <!-- Onboarding Modal -->
-        <div id="onboarding-modal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
-            <div class="relative bg-card w-[90%] max-w-md rounded-3xl shadow-2xl p-6 md:p-8 animate-in slide-in-from-bottom-10 duration-300 border border-border/50">
-                
-                <button onclick="closeOnboarding()" class="absolute top-4 right-4 p-2 rounded-full hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
-                    <i data-lucide="x" class="w-5 h-5"></i>
-                </button>
-
-                <div class="text-center space-y-2 mb-6">
-                    <div class="w-12 h-12 bg-primary/20 rounded-full mx-auto flex items-center justify-center mb-3">
-                        <span class="text-2xl">👋</span>
-                    </div>
-                    <h2 class="text-2xl font-heading font-bold">Welcome Aboard</h2>
-                    <p class="text-sm text-muted-foreground">Let's personalize your experience.</p>
-                </div>
-
-                <form onsubmit="handleOnboardingSubmit(event)" class="space-y-4">
-                    <div class="space-y-1.5">
-                        <label class="text-sm font-semibold ml-1">Name</label>
-                        <input type="text" name="name" required class="w-full h-11 px-4 rounded-xl bg-muted/30 border border-muted focus:border-primary outline-none transition-all text-sm" placeholder="Your first name">
-                    </div>
-
-                    <div class="space-y-1.5">
-                        <label class="text-sm font-semibold ml-1">Company Email</label>
-                        <input type="email" name="email" required class="w-full h-11 px-4 rounded-xl bg-muted/30 border border-muted focus:border-primary outline-none transition-all text-sm" placeholder="you@company.com">
-                    </div>
-                    
-                    <div class="space-y-1.5">
-                        <label class="text-sm font-semibold ml-1">Role</label>
-                        <select name="role" class="w-full h-11 px-4 rounded-xl bg-muted/30 border border-muted outline-none transition-all text-sm">
-                            <option>Product Lead</option>
-                            <option>Engineering Manager</option>
-                            <option>Team Lead</option>
-                            <option>Design Lead</option>
-                        </select>
-                    </div>
-
-                    <button type="submit" class="w-full h-12 rounded-full bg-primary text-primary-foreground font-bold text-base hover:bg-primary/90 hover:scale-[1.02] transition-all shadow-lg mt-2">
-                        Start My 30 Days
-                    </button>
-                </form>
-            </div>
-        </div>
-    `;
-    lucide.createIcons();
-}
-
-function showOnboarding() {
-    document.getElementById('onboarding-modal').classList.remove('hidden');
-}
-
-function closeOnboarding() {
-    document.getElementById('onboarding-modal').classList.add('hidden');
 }
 
 function handleOnboardingSubmit(e) {
     e.preventDefault();
-    const formData = new FormData(e.target);
-    const email = formData.get('email');
+    const name = document.getElementById('name').value;
+    const role = document.getElementById('role').value;
+    const teamSize = document.getElementById('teamSize').value;
 
-    if (!email || !email.includes('@') || !email.includes('.')) {
-        alert("Please enter a valid company email.");
-        return;
-    }
+    if (!name) return;
 
-    state.user = {
-        name: formData.get('name'),
-        email: email,
-        role: formData.get('role'),
-        currentDay: 1,
-        completedDays: [],
-        reflections: {}
-    };
+    // Simulate loading
+    const btn = e.target.querySelector('button[type="submit"]');
+    const originalText = btn.innerText;
+    btn.innerText = "Setting up your office...";
+    btn.disabled = true;
 
-    localStorage.setItem('lionlead_user', JSON.stringify(state.user));
-    renderApp();
+    setTimeout(() => {
+        state.user = {
+            name: name,
+            role: role,
+            teamSize: teamSize,
+            email: "demo@example.com", // Placeholder
+            currentDay: 1,
+            completedDays: [],
+            reflections: {}
+        };
+
+        localStorage.setItem('lionlead_user', JSON.stringify(state.user));
+
+        document.getElementById('onboarding-modal').classList.add('hidden');
+        showApp();
+
+        // Reset button
+        btn.innerText = originalText;
+        btn.disabled = false;
+    }, 1000);
 }
 
 function renderJourney() {
