@@ -62,6 +62,30 @@ document.addEventListener('DOMContentLoaded', async () => {
             onboardingForm.addEventListener('submit', handleOnboardingSubmit);
         }
 
+        // Login Modal Logic
+        const loginBtn = document.getElementById('login-btn');
+        const loginModal = document.getElementById('login-modal');
+        const closeLoginBtn = document.getElementById('close-login');
+        const loginBackdrop = document.getElementById('login-backdrop');
+
+        if (loginBtn) {
+            loginBtn.addEventListener('click', () => {
+                loginModal.classList.remove('hidden');
+            });
+        }
+
+        if (closeLoginBtn) {
+            closeLoginBtn.addEventListener('click', () => {
+                loginModal.classList.add('hidden');
+            });
+        }
+
+        if (loginBackdrop) {
+            loginBackdrop.addEventListener('click', () => {
+                loginModal.classList.add('hidden');
+            });
+        }
+
         // Check User State
         const savedUser = localStorage.getItem('lionlead_user');
         if (savedUser) {
