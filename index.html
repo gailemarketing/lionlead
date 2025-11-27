@@ -8,41 +8,54 @@
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    theme: {
-    extend: {
-    colors: {
-    background: "hsl(40 30% 97%)",
-    foreground: "hsl(20 10% 15%)",
-    card: "hsl(0 0% 100%)",
-    "card-foreground": "hsl(20 10% 15%)",
-    popover: "hsl(0 0% 100%)",
-    "popover-foreground": "hsl(20 10% 15%)",
-    primary: "hsl(45 100% 50%)",
-    "primary-foreground": "hsl(20 20% 10%)",
-    secondary: "hsl(35 30% 90%)",
-    "secondary-foreground": "hsl(20 10% 15%)",
-    muted: "hsl(35 20% 92%)",
-    "muted-foreground": "hsl(20 5% 45%)",
-    accent: "hsl(25 90% 65%)",
-    "accent-foreground": "hsl(0 0% 100%)",
-    destructive: "hsl(0 84% 60%)",
-    "destructive-foreground": "hsl(0 0% 98%)",
-    border: "hsl(35 15% 85%)",
-    input: "hsl(35 15% 85%)",
-    ring: "hsl(45 100% 50%)",
-    },
-    fontFamily: {
-    sans: ['DM Sans', 'sans-serif'],
-    heading: ['Space Grotesk', 'sans-serif'],
-    },
-    borderRadius: {
-    lg: "1rem",
-    md: "calc(1rem - 2px)",
-    sm: "calc(1rem - 4px)",
-    }
-    }
-    }
-    }
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap"
+        rel="stylesheet">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="favicon.png?v=4">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        background: "hsl(40 30% 97%)",
+                        foreground: "hsl(20 10% 15%)",
+                        card: "hsl(0 0% 100%)",
+                        "card-foreground": "hsl(20 10% 15%)",
+                        popover: "hsl(0 0% 100%)",
+                        "popover-foreground": "hsl(20 10% 15%)",
+                        primary: "hsl(45 100% 50%)",
+                        "primary-foreground": "hsl(20 20% 10%)",
+                        secondary: "hsl(35 30% 90%)",
+                        "secondary-foreground": "hsl(20 10% 15%)",
+                        muted: "hsl(35 20% 92%)",
+                        "muted-foreground": "hsl(20 5% 45%)",
+                        accent: "hsl(25 90% 65%)",
+                        "accent-foreground": "hsl(0 0% 100%)",
+                        destructive: "hsl(0 84% 60%)",
+                        "destructive-foreground": "hsl(0 0% 98%)",
+                        border: "hsl(35 15% 85%)",
+                        input: "hsl(35 15% 85%)",
+                        ring: "hsl(45 100% 50%)",
+                    },
+                    fontFamily: {
+                        sans: ['DM Sans', 'sans-serif'],
+                        heading: ['Space Grotesk', 'sans-serif'],
+                    },
+                    borderRadius: {
+                        lg: "1rem",
+                        md: "calc(1rem - 2px)",
+                        sm: "calc(1rem - 4px)",
+                    }
+                }
+            }
+        }
     </script>
 
     <!-- Lucide Icons -->
@@ -108,7 +121,7 @@
         <div class="relative animate-in slide-in-from-right-10 duration-700 fade-in delay-200">
             <div
                 class="absolute -inset-4 bg-gradient-to-tr from-yellow-200 to-orange-100 rounded-[3rem] blur-2xl opacity-60 -z-10">
-            </div><img src="hero-image.png" alt="Diverse team meeting"
+            </div><img src="hero-image-v2.png" alt="Diverse team meeting"
                 class="rounded-[2.5rem] shadow-2xl w-full object-cover aspect-[4/3] border-4 border-white transform rotate-1 hover:rotate-0 transition-transform duration-500" />
             <!-- Floating Cards -->
             <div
