@@ -45,6 +45,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const modal = document.getElementById('onboarding-modal');
         const modalBackdrop = document.getElementById('modal-backdrop');
         const onboardingForm = document.getElementById('onboarding-form');
+        const closeOnboardingBtn = document.getElementById('close-onboarding');
+        const switchToLoginBtn = document.getElementById('switch-to-login');
 
         if (startBtn) {
             startBtn.addEventListener('click', () => {
@@ -58,6 +60,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         }
 
+        if (closeOnboardingBtn) {
+            closeOnboardingBtn.addEventListener('click', () => {
+                modal.classList.add('hidden');
+            });
+        }
+
         if (onboardingForm) {
             onboardingForm.addEventListener('submit', handleOnboardingSubmit);
         }
@@ -67,10 +75,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         const loginModal = document.getElementById('login-modal');
         const closeLoginBtn = document.getElementById('close-login');
         const loginBackdrop = document.getElementById('login-backdrop');
+        const loginForm = document.getElementById('login-form');
+        const switchToSignupBtn = document.getElementById('switch-to-signup');
 
         if (loginBtn) {
             loginBtn.addEventListener('click', () => {
                 loginModal.classList.remove('hidden');
+            });
+        }
+
+        if (switchToLoginBtn) {
+            switchToLoginBtn.addEventListener('click', () => {
+                modal.classList.add('hidden');
+                loginModal.classList.remove('hidden');
+            });
+        }
+
+        if (switchToSignupBtn) {
+            switchToSignupBtn.addEventListener('click', () => {
+                loginModal.classList.add('hidden');
+                modal.classList.remove('hidden');
             });
         }
 
@@ -86,6 +110,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         }
 
+        if (loginForm) {
+            loginForm.addEventListener('submit', handleLoginSubmit);
+        }
+
         // Check User State
         const savedUser = localStorage.getItem('lionlead_user');
         if (savedUser) {
@@ -98,6 +126,49 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.error("App Init Error:", e);
     }
 });
+
+function handleLoginSubmit(e) {
+    e.preventDefault();
+    const email = document.getElementById('login-email').value;
+    const password = document.getElementById('login-password').value;
+
+    if (!email || !password) return;
+
+    // Simulate loading
+    const btn = e.target.querySelector('button[type="submit"]');
+    const originalText = btn.innerText;
+    btn.innerText = "Logging in...";
+    btn.disabled = true;
+
+    setTimeout(() => {
+        // Simple mock login - in a real app, we'd validate against a backend
+        // For now, we'll just create a user session if one doesn't exist, 
+        // or use the existing one if the email matches (simplified)
+
+        let user = state.user;
+        if (!user || user.email !== email) {
+            user = {
+                name: email.split('@')[0], // Fallback name
+                email: email,
+                role: "Returning User",
+                teamSize: "Unknown",
+                currentDay: 1,
+                completedDays: [],
+                reflections: {}
+            };
+        }
+
+        state.user = user;
+        localStorage.setItem('lionlead_user', JSON.stringify(state.user));
+
+        document.getElementById('login-modal').classList.add('hidden');
+        showApp();
+
+        // Reset button
+        btn.innerText = originalText;
+        btn.disabled = false;
+    }, 1000);
+}
 
 function showApp() {
     document.getElementById('hero-section').classList.add('hidden');
@@ -122,10 +193,11 @@ function logout() {
 function handleOnboardingSubmit(e) {
     e.preventDefault();
     const name = document.getElementById('name').value;
+    const email = document.getElementById('email').value;
     const role = document.getElementById('role').value;
     const teamSize = document.getElementById('teamSize').value;
 
-    if (!name) return;
+    if (!name || !email) return;
 
     // Simulate loading
     const btn = e.target.querySelector('button[type="submit"]');
@@ -136,9 +208,9 @@ function handleOnboardingSubmit(e) {
     setTimeout(() => {
         state.user = {
             name: name,
+            email: email,
             role: role,
             teamSize: teamSize,
-            email: "demo@example.com", // Placeholder
             currentDay: 1,
             completedDays: [],
             reflections: {}
