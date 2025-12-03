@@ -1,3 +1,4 @@
+
 // State
 let state = {
     user: null,
@@ -22,6 +23,21 @@ const JOURNEY_DATA = [
     { day: 2, theme: "Identity Shift", title: "Active Listening", insight: "Great leaders listen more than they talk.", action: "Practice active listening in your next meeting.", script: "Thank you for sharing that. I appreciate your honesty...", reflection_question: "What did you learn by listening?" },
 ];
 
+// Notification Helper
+function showNotification(title, message) {
+    const modal = document.getElementById('notification-modal');
+    const titleEl = document.getElementById('notification-title');
+    const msgEl = document.getElementById('notification-message');
+
+    titleEl.textContent = title;
+    msgEl.textContent = message;
+    modal.classList.remove('hidden');
+}
+
+document.getElementById('close-notification').addEventListener('click', () => {
+    document.getElementById('notification-modal').classList.add('hidden');
+});
+
 // Init
 document.addEventListener('DOMContentLoaded', async () => {
     try {
@@ -29,21 +45,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             throw new Error("Lucide icons library failed to load.");
         }
         lucide.createIcons();
-
-        // Fetch Dynamic Journey Data
-        try {
-            const res = await fetch('/api/journey');
-            if (res.ok) {
-                const dynamicData = await res.json();
-                if (dynamicData && dynamicData.length > 0) {
-                    JOURNEY_DATA.length = 0;
-                    JOURNEY_DATA.push(...dynamicData);
-                    console.log("Loaded dynamic journey data:", JOURNEY_DATA.length, "days");
-                }
-            }
-        } catch (err) {
-            console.warn("Failed to load dynamic journey data, using fallback.", err);
-        }
 
         // Event Listeners for Static Elements
         const startBtn = document.getElementById('start-btn');
@@ -126,7 +127,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Check User State & Session
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
-            // Fetch user profile/metadata if needed, for now use metadata
             const metadata = session.user.user_metadata;
             state.user = {
                 email: session.user.email,
@@ -138,7 +138,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 reflections: metadata.reflections || {}
             };
 
-            // Update Login Button
             const loginBtn = document.getElementById('login-btn');
             if (loginBtn) loginBtn.innerText = "Log out";
 
@@ -161,18 +160,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                     reflections: metadata.reflections || {}
                 };
 
-                // Update Login Button
                 const loginBtn = document.getElementById('login-btn');
                 if (loginBtn) loginBtn.innerText = "Log out";
 
                 showApp();
             } else if (event === 'SIGNED_OUT') {
                 state.user = null;
-
-                // Update Login Button
                 const loginBtn = document.getElementById('login-btn');
                 if (loginBtn) loginBtn.innerText = "Log in";
-
                 showHome();
             }
         });
@@ -203,9 +198,9 @@ async function handleLoginSubmit(e) {
         if (error) throw error;
 
         document.getElementById('login-modal').classList.add('hidden');
-        // onAuthStateChange will handle the rest
+        showNotification("Welcome Back", "Successfully logged in!");
     } catch (error) {
-        alert("Login failed: " + error.message);
+        showNotification("Login Failed", error.message);
     } finally {
         btn.innerText = originalText;
         btn.disabled = false;
@@ -266,11 +261,11 @@ async function handleOnboardingSubmit(e) {
 
         if (error) throw error;
 
-        alert("Account created! Please check your email to confirm your account.");
+        showNotification("Success", "Account created! Please check your email to confirm your account.");
         document.getElementById('onboarding-modal').classList.add('hidden');
 
     } catch (error) {
-        alert("Signup failed: " + error.message);
+        showNotification("Error", "Signup failed: " + error.message);
     } finally {
         btn.innerText = originalText;
         btn.disabled = false;
