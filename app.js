@@ -11,6 +11,11 @@ let state = {
     isTyping: false
 };
 
+// Supabase Configuration
+const supabaseUrl = 'https://knchkxxjcjeitlcjdfeo.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtuY2hreHhqY2plaXRsY2pkZmVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ2MTQ3OTIsImV4cCI6MjA4MDE5MDc5Mn0.3dFCwWCwVo86RAXpdh90ubz0RC31xNFPFYRKXDGbCm8';
+const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
 // Mock Data (Fallback)
 const JOURNEY_DATA = [
     { day: 1, theme: "Identity Shift", title: "Embracing Your New Role", insight: "Your success now comes from your team's success.", action: "Schedule 1:1s with all direct reports.", script: "I'd love to hear your thoughts on what's going well...", reflection_question: "What's one thing you need to do differently?" },
@@ -80,7 +85,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (loginBtn) {
             loginBtn.addEventListener('click', () => {
-                loginModal.classList.remove('hidden');
+                if (state.user) {
+                    logout();
+                } else {
+                    loginModal.classList.remove('hidden');
+                }
             });
         }
 
@@ -114,60 +123,93 @@ document.addEventListener('DOMContentLoaded', async () => {
             loginForm.addEventListener('submit', handleLoginSubmit);
         }
 
-        // Check User State
-        const savedUser = localStorage.getItem('lionlead_user');
-        if (savedUser) {
-            state.user = JSON.parse(savedUser);
+        // Check User State & Session
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+            // Fetch user profile/metadata if needed, for now use metadata
+            const metadata = session.user.user_metadata;
+            state.user = {
+                email: session.user.email,
+                name: metadata.name || session.user.email.split('@')[0],
+                role: metadata.role || "Leader",
+                teamSize: metadata.teamSize || "Unknown",
+                currentDay: metadata.currentDay || 1,
+                completedDays: metadata.completedDays || [],
+                reflections: metadata.reflections || {}
+            };
+
+            // Update Login Button
+            const loginBtn = document.getElementById('login-btn');
+            if (loginBtn) loginBtn.innerText = "Log out";
+
             showApp();
         } else {
             showHome();
         }
+
+        // Listen for Auth Changes
+        supabase.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_IN' && session) {
+                const metadata = session.user.user_metadata;
+                state.user = {
+                    email: session.user.email,
+                    name: metadata.name || session.user.email.split('@')[0],
+                    role: metadata.role || "Leader",
+                    teamSize: metadata.teamSize || "Unknown",
+                    currentDay: metadata.currentDay || 1,
+                    completedDays: metadata.completedDays || [],
+                    reflections: metadata.reflections || {}
+                };
+
+                // Update Login Button
+                const loginBtn = document.getElementById('login-btn');
+                if (loginBtn) loginBtn.innerText = "Log out";
+
+                showApp();
+            } else if (event === 'SIGNED_OUT') {
+                state.user = null;
+
+                // Update Login Button
+                const loginBtn = document.getElementById('login-btn');
+                if (loginBtn) loginBtn.innerText = "Log in";
+
+                showHome();
+            }
+        });
+
     } catch (e) {
         console.error("App Init Error:", e);
     }
 });
 
-function handleLoginSubmit(e) {
+async function handleLoginSubmit(e) {
     e.preventDefault();
     const email = document.getElementById('login-email').value;
     const password = document.getElementById('login-password').value;
 
     if (!email || !password) return;
 
-    // Simulate loading
     const btn = e.target.querySelector('button[type="submit"]');
     const originalText = btn.innerText;
     btn.innerText = "Logging in...";
     btn.disabled = true;
 
-    setTimeout(() => {
-        // Simple mock login - in a real app, we'd validate against a backend
-        // For now, we'll just create a user session if one doesn't exist, 
-        // or use the existing one if the email matches (simplified)
+    try {
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email: email,
+            password: password
+        });
 
-        let user = state.user;
-        if (!user || user.email !== email) {
-            user = {
-                name: email.split('@')[0], // Fallback name
-                email: email,
-                role: "Returning User",
-                teamSize: "Unknown",
-                currentDay: 1,
-                completedDays: [],
-                reflections: {}
-            };
-        }
-
-        state.user = user;
-        localStorage.setItem('lionlead_user', JSON.stringify(state.user));
+        if (error) throw error;
 
         document.getElementById('login-modal').classList.add('hidden');
-        showApp();
-
-        // Reset button
+        // onAuthStateChange will handle the rest
+    } catch (error) {
+        alert("Login failed: " + error.message);
+    } finally {
         btn.innerText = originalText;
         btn.disabled = false;
-    }, 1000);
+    }
 }
 
 function showApp() {
@@ -182,49 +224,57 @@ function showHome() {
     document.getElementById('mobile-nav').classList.add('hidden');
 }
 
-function logout() {
+async function logout() {
     if (confirm("Are you sure you want to log out?")) {
-        localStorage.removeItem('lionlead_user');
-        state.user = null;
-        showHome();
+        await supabase.auth.signOut();
+        // onAuthStateChange will handle UI update
     }
 }
 
-function handleOnboardingSubmit(e) {
+async function handleOnboardingSubmit(e) {
     e.preventDefault();
     const name = document.getElementById('name').value;
     const email = document.getElementById('email').value;
+    // For this hackathon, we are using a simple password field.
+    // In a real app, we would have better validation.
+    const password = document.getElementById('password') ? document.getElementById('password').value : prompt("Please create a password for your account:");
     const role = document.getElementById('role').value;
     const teamSize = document.getElementById('teamSize').value;
 
-    if (!name || !email) return;
+    if (!name || !email || !password) return;
 
-    // Simulate loading
     const btn = e.target.querySelector('button[type="submit"]');
     const originalText = btn.innerText;
-    btn.innerText = "Setting up your office...";
+    btn.innerText = "Creating account...";
     btn.disabled = true;
 
-    setTimeout(() => {
-        state.user = {
-            name: name,
+    try {
+        const { data, error } = await supabase.auth.signUp({
             email: email,
-            role: role,
-            teamSize: teamSize,
-            currentDay: 1,
-            completedDays: [],
-            reflections: {}
-        };
+            password: password,
+            options: {
+                data: {
+                    name: name,
+                    role: role,
+                    teamSize: teamSize,
+                    currentDay: 1,
+                    completedDays: [],
+                    reflections: {}
+                }
+            }
+        });
 
-        localStorage.setItem('lionlead_user', JSON.stringify(state.user));
+        if (error) throw error;
 
+        alert("Account created! Please check your email to confirm your account.");
         document.getElementById('onboarding-modal').classList.add('hidden');
-        showApp();
 
-        // Reset button
+    } catch (error) {
+        alert("Signup failed: " + error.message);
+    } finally {
         btn.innerText = originalText;
         btn.disabled = false;
-    }, 1000);
+    }
 }
 
 function renderJourney() {

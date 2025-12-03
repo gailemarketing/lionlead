@@ -52,6 +52,9 @@
                         lg: "1rem",
                         md: "calc(1rem - 2px)",
                         sm: "calc(1rem - 4px)",
+                    },
+                    maxWidth: {
+                        'site': '1440px',
                     }
                 }
             }
@@ -60,6 +63,9 @@
 
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Supabase Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
         body {
@@ -94,7 +100,7 @@
 
 <body>
     <!-- Header -->
-    <header class="flex items-center justify-between px-6 py-4 lg:px-12 lg:py-6 max-w-7xl mx-auto w-full">
+    <header class="flex items-center justify-between px-6 py-4 lg:px-12 lg:py-6 max-w-site mx-auto w-full">
         <a href="/" class="flex items-center gap-2 hover:opacity-80 transition-opacity">
             <img src="logo.png?v=2" alt="LionLead Logo" class="w-10 h-10 object-contain">
             <span class="font-heading font-bold text-2xl tracking-tight">LionLead</span>
@@ -103,7 +109,7 @@
     </header>
 
     <div id="hero-section"
-        class="min-h-[calc(100vh-80px)] flex flex-col lg:flex-row items-center justify-center p-6 lg:p-12 gap-12 lg:gap-24 relative overflow-hidden">
+        class="min-h-[calc(100vh-80px)] flex flex-col lg:flex-row items-center justify-center p-6 lg:p-12 gap-12 lg:gap-24 relative overflow-hidden max-w-site mx-auto">
         <div class="space-y-8 max-w-2xl relative z-10 animate-in slide-in-from-left-10 duration-700 fade-in">
             <div
                 class="inline-block bg-yellow-100 text-yellow-800 px-4 py-2 rounded-full text-xs font-bold tracking-widest uppercase mb-4">
@@ -214,29 +220,27 @@
             <form id="onboarding-form" class="space-y-3 mt-4">
                 <div class="space-y-1">
                     <label for="name" class="text-xs font-bold text-foreground block uppercase tracking-wide">What
-                        should
-                        we call you?</label>
-                    <div class="relative">
-                        <input type="text" id="name" placeholder="Your first name" required
-                            class="w-full h-10 px-3 rounded-lg bg-muted/30 border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-sm transition-all placeholder:text-muted-foreground/70" />
-                        <div
-                            class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/50 pointer-events-none">
-                            <i data-lucide="more-horizontal" class="w-4 h-4"></i>
-                        </div>
-                    </div>
+                        should we call you?</label>
+                    <input type="text" id="name" placeholder="Your first name" required
+                        class="w-full h-10 px-3 rounded-lg bg-muted/30 border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-sm transition-all placeholder:text-muted-foreground/70" />
                 </div>
-
                 <div class="space-y-1">
-                    <label for="email" class="text-xs font-bold text-foreground block uppercase tracking-wide">Work
-                        Email</label>
-                    <input type="email" id="email" placeholder="your@company.com" required
+                    <label for="email"
+                        class="text-xs font-bold text-foreground block uppercase tracking-wide">Email</label>
+                    <input type="email" id="email" placeholder="you@company.com" required
+                        class="w-full h-10 px-3 rounded-lg bg-muted/30 border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-sm transition-all placeholder:text-muted-foreground/70" />
+                </div>
+                <div class="space-y-1">
+                    <label for="password" class="text-xs font-bold text-foreground block uppercase tracking-wide">Create
+                        Password</label>
+                    <input type="password" id="password" placeholder="Min. 6 characters" required minlength="6"
                         class="w-full h-10 px-3 rounded-lg bg-muted/30 border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-sm transition-all placeholder:text-muted-foreground/70" />
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
                     <div class="space-y-1">
-                        <label for="role" class="text-xs font-bold text-foreground block uppercase tracking-wide">New
-                            Role</label>
+                        <label for="role"
+                            class="text-xs font-bold text-foreground block uppercase tracking-wide">Role</label>
                         <div class="relative">
                             <select id="role"
                                 class="w-full h-10 px-3 rounded-lg bg-muted/30 border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-sm transition-all appearance-none cursor-pointer">
