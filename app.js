@@ -124,6 +124,87 @@ document.addEventListener('DOMContentLoaded', async () => {
             loginForm.addEventListener('submit', handleLoginSubmit);
         }
 
+        // Logout Modal Logic
+        const logoutModal = document.getElementById('logout-modal');
+        const confirmLogoutBtn = document.getElementById('confirm-logout');
+        const cancelLogoutBtn = document.getElementById('cancel-logout');
+        const logoutBackdrop = document.getElementById('logout-backdrop');
+
+        if (confirmLogoutBtn) {
+            confirmLogoutBtn.addEventListener('click', async () => {
+                await supabase.auth.signOut();
+                logoutModal.classList.add('hidden');
+                // onAuthStateChange will handle UI update
+            });
+        }
+
+        if (cancelLogoutBtn) {
+            cancelLogoutBtn.addEventListener('click', () => {
+                logoutModal.classList.add('hidden');
+            });
+        }
+
+        if (logoutBackdrop) {
+            logoutBackdrop.addEventListener('click', () => {
+                logoutModal.classList.add('hidden');
+            });
+        }
+
+        // Reset Password Logic
+        const resetModal = document.getElementById('reset-modal');
+        const forgotPasswordLink = document.getElementById('forgot-password-link');
+        const closeResetBtn = document.getElementById('close-reset');
+        const resetBackdrop = document.getElementById('reset-backdrop');
+        const resetForm = document.getElementById('reset-form');
+
+        if (forgotPasswordLink) {
+            forgotPasswordLink.addEventListener('click', () => {
+                loginModal.classList.add('hidden');
+                resetModal.classList.remove('hidden');
+            });
+        }
+
+        if (closeResetBtn) {
+            closeResetBtn.addEventListener('click', () => {
+                resetModal.classList.add('hidden');
+            });
+        }
+
+        if (resetBackdrop) {
+            resetBackdrop.addEventListener('click', () => {
+                resetModal.classList.add('hidden');
+            });
+        }
+
+        if (resetForm) {
+            resetForm.addEventListener('submit', handleResetPassword);
+        }
+
+        // Existing Account Modal Logic
+        const existingAccountModal = document.getElementById('existing-account-modal');
+        const existingLoginBtn = document.getElementById('existing-login-btn');
+        const closeExistingBtn = document.getElementById('close-existing');
+        const existingBackdrop = document.getElementById('existing-account-backdrop');
+
+        if (existingLoginBtn) {
+            existingLoginBtn.addEventListener('click', () => {
+                existingAccountModal.classList.add('hidden');
+                loginModal.classList.remove('hidden');
+            });
+        }
+
+        if (closeExistingBtn) {
+            closeExistingBtn.addEventListener('click', () => {
+                existingAccountModal.classList.add('hidden');
+            });
+        }
+
+        if (existingBackdrop) {
+            existingBackdrop.addEventListener('click', () => {
+                existingAccountModal.classList.add('hidden');
+            });
+        }
+
         // Check User State & Session
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
@@ -200,7 +281,28 @@ async function handleLoginSubmit(e) {
         document.getElementById('login-modal').classList.add('hidden');
         showNotification("Welcome Back", "Successfully logged in!");
     } catch (error) {
-        showNotification("Login Failed", error.message);
+        // Fallback: Check if session was created despite error
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+            document.getElementById('login-modal').classList.add('hidden');
+            showNotification("Welcome Back", "Successfully logged in!");
+            // Ensure UI is updated
+            const metadata = session.user.user_metadata;
+            state.user = {
+                email: session.user.email,
+                name: metadata.name || session.user.email.split('@')[0],
+                role: metadata.role || "Leader",
+                teamSize: metadata.teamSize || "Unknown",
+                currentDay: metadata.currentDay || 1,
+                completedDays: metadata.completedDays || [],
+                reflections: metadata.reflections || {}
+            };
+            const loginBtn = document.getElementById('login-btn');
+            if (loginBtn) loginBtn.innerText = "Log out";
+            showApp();
+        } else {
+            showNotification("Login Failed", error.message);
+        }
     } finally {
         btn.innerText = originalText;
         btn.disabled = false;
@@ -220,10 +322,7 @@ function showHome() {
 }
 
 async function logout() {
-    if (confirm("Are you sure you want to log out?")) {
-        await supabase.auth.signOut();
-        // onAuthStateChange will handle UI update
-    }
+    document.getElementById('logout-modal').classList.remove('hidden');
 }
 
 async function handleOnboardingSubmit(e) {
@@ -265,7 +364,43 @@ async function handleOnboardingSubmit(e) {
         document.getElementById('onboarding-modal').classList.add('hidden');
 
     } catch (error) {
+        if (error.message.includes("already registered") || error.status === 400 || error.status === 422) {
+            // Check if it's actually an "already registered" error. 
+            // Supabase often returns "User already registered" message.
+            if (error.message.toLowerCase().includes("already registered") || error.message.toLowerCase().includes("already exists")) {
+                document.getElementById('onboarding-modal').classList.add('hidden');
+                document.getElementById('existing-account-modal').classList.remove('hidden');
+                return;
+            }
+        }
         showNotification("Error", "Signup failed: " + error.message);
+    } finally {
+        btn.innerText = originalText;
+        btn.disabled = false;
+    }
+}
+
+async function handleResetPassword(e) {
+    e.preventDefault();
+    const email = document.getElementById('reset-email').value;
+    if (!email) return;
+
+    const btn = e.target.querySelector('button[type="submit"]');
+    const originalText = btn.innerText;
+    btn.innerText = "Sending...";
+    btn.disabled = true;
+
+    try {
+        const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: window.location.origin, // Redirect back to the site
+        });
+
+        if (error) throw error;
+
+        document.getElementById('reset-modal').classList.add('hidden');
+        showNotification("Check your email", "We've sent you a password reset link.");
+    } catch (error) {
+        showNotification("Error", error.message);
     } finally {
         btn.innerText = originalText;
         btn.disabled = false;
