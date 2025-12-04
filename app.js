@@ -275,8 +275,41 @@ async function handleLoginSubmit(e) {
 
         if (error) throw error;
 
+        // Fetch User Progress from Supabase
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            const { data: progressData, error: progressError } = await supabase
+                .from('user_progress')
+                .select('*')
+                .eq('user_id', user.id);
+
+            if (progressError) throw progressError;
+
+            if (progressData && progressData.length > 0) {
+                // Reconstruct completed days
+                const completedDays = progressData.map(p => p.day).sort((a, b) => a - b);
+                state.user.completedDays = completedDays;
+
+                // Determine current day (max completed + 1, capped at 30)
+                const maxDay = completedDays.length > 0 ? Math.max(...completedDays) : 0;
+                state.user.currentDay = Math.min(maxDay + 1, 30);
+
+                // Restore reflections
+                progressData.forEach(p => {
+                    if (p.reflection) {
+                        state.user.reflections[p.day] = p.reflection;
+                    }
+                });
+
+                // Update Local Storage
+                localStorage.setItem('lionlead_user', JSON.stringify(state.user));
+            }
+        } catch (err) {
+            console.error("Failed to sync progress from Supabase:", err);
+        }
+
         document.getElementById('login-modal').classList.add('hidden');
-        showNotification("Welcome Back", "Successfully logged in!");
+        showNotification("Welcome Back", "Successfully logged in! Progress synced.");
     } catch (error) {
         // Fallback: Check if session was created despite error
         const { data: { session } } = await supabase.auth.getSession();
@@ -694,23 +727,21 @@ async function completeDay() {
         localStorage.setItem('lionlead_user', JSON.stringify(state.user));
         renderApp();
 
-        // Save to Drive (Background)
+        // Save to Supabase (Background)
         try {
-            await fetch('/api/progress', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    userId: state.user.email, // Use email as ID for now
-                    userName: state.user.name,
+            const { error } = await supabase
+                .from('user_progress')
+                .upsert({
+                    user_id: (await supabase.auth.getUser()).data.user.id,
                     day: day,
-                    reflection: reflection
-                })
-            });
-            console.log("Progress saved to Drive");
+                    reflection: reflection,
+                    updated_at: new Date().toISOString()
+                }, { onConflict: 'user_id, day' });
+
+            if (error) throw error;
+            console.log("Progress saved to Supabase");
         } catch (err) {
-            console.error("Failed to save progress to Drive:", err);
-            // We don't revert UI because local storage is the source of truth for the user
-            // But we could show a toast notification here
+            console.error("Failed to save progress to Supabase:", err);
         }
     }
 }

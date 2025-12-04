@@ -1,4 +1,4 @@
-const { saveUserProgress } = require('./googleService');
+const { saveUserProgress } = require('./bigqueryService');
 
 module.exports = async (req, res) => {
     if (req.method !== 'POST') {
