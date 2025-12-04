@@ -219,9 +219,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 reflections: metadata.reflections || {}
             };
 
-            const loginBtn = document.getElementById('login-btn');
-            if (loginBtn) loginBtn.innerText = "Log out";
-
+            updateHeaderState();
             showApp();
         } else {
             showHome();
@@ -247,8 +245,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 showApp();
             } else if (event === 'SIGNED_OUT') {
                 state.user = null;
-                const loginBtn = document.getElementById('login-btn');
-                if (loginBtn) loginBtn.innerText = "Log in";
+                updateHeaderState();
                 showHome();
             }
         });
@@ -312,6 +309,75 @@ async function handleLoginSubmit(e) {
 function showApp() {
     document.getElementById('hero-section').classList.add('hidden');
     document.getElementById('app').classList.remove('hidden');
+    renderApp();
+}
+
+function updateHeaderState() {
+    const container = document.getElementById('header-right');
+    if (!container) return;
+
+    if (state.user) {
+        // User Profile View
+        const initial = state.user.name.charAt(0).toUpperCase();
+        container.innerHTML = `
+            <div class="flex items-center gap-3">
+                <div class="text-right hidden sm:block leading-tight">
+                    <div class="font-bold text-sm text-foreground">${state.user.name}</div>
+                    <div class="text-[11px] font-medium text-muted-foreground">${state.user.role}</div>
+                </div>
+                <div class="w-9 h-9 rounded-full bg-[#FFEBA4] flex items-center justify-center text-[#8B6E28] font-bold text-sm border border-[#F5DFA0] shadow-sm">
+                    ${initial}
+                </div>
+                <button onclick="logout()" class="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors rounded-full hover:bg-secondary/50" title="Log out">
+                    <i data-lucide="log-out" class="w-4 h-4"></i>
+                </button>
+            </div>
+        `;
+        lucide.createIcons();
+    } else {
+        // Login Button View
+        container.innerHTML = `
+            <button id="login-btn" class="font-bold text-foreground hover:text-primary transition-colors">Log in</button>
+        `;
+        // Re-attach event listener since we replaced the element
+        document.getElementById('login-btn').addEventListener('click', () => {
+            document.getElementById('login-modal').classList.remove('hidden');
+        });
+    }
+}
+
+function renderApp() {
+    const app = document.getElementById('app');
+
+    // Tab Switcher
+    const tabsHtml = `
+        <div class="flex justify-center mb-8">
+            <div class="bg-secondary/50 p-1 rounded-full shadow-inner inline-flex">
+                <button onclick="switchTab('journey')" class="px-6 py-2 rounded-full text-sm font-bold transition-all ${state.currentTab === 'journey' ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}">
+                    <i data-lucide="map" class="w-4 h-4 inline-block mr-2"></i>Journey
+                </button>
+                <button onclick="switchTab('coach')" class="px-6 py-2 rounded-full text-sm font-bold transition-all ${state.currentTab === 'coach' ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}">
+                    <i data-lucide="message-square" class="w-4 h-4 inline-block mr-2"></i>Coach
+                </button>
+            </div>
+        </div>
+    `;
+
+    let contentHtml = '';
+    if (state.currentTab === 'journey') {
+        contentHtml = renderJourney();
+    } else if (state.currentTab === 'coach') {
+        contentHtml = renderCoach();
+    } else {
+        contentHtml = renderPractice(); // Fallback or remove if not needed
+    }
+
+    app.innerHTML = tabsHtml + contentHtml;
+    lucide.createIcons();
+}
+
+function switchTab(tab) {
+    state.currentTab = tab;
     renderApp();
 }
 
@@ -410,45 +476,86 @@ async function handleResetPassword(e) {
 function renderJourney() {
     const currentContent = JOURNEY_DATA.find(d => d.day === state.user.currentDay) || JOURNEY_DATA[0];
     const progress = Math.round((state.user.completedDays.length / 30) * 100);
+    const isCompleted = state.user.completedDays.includes(state.user.currentDay);
 
     return `
-        <div class="space-y-8">
+        <div class="max-w-5xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <!-- Header -->
-            <div class="flex items-center justify-between">
+            <div class="flex items-center justify-between px-2">
                 <div>
-                    <h2 class="text-3xl font-heading font-bold">Your Journey</h2>
+                    <h2 class="text-3xl font-heading font-bold">Your 30-Day Journey</h2>
                     <p class="text-muted-foreground">Day ${state.user.currentDay} of 30</p>
                 </div>
                 <div class="text-right">
-                    <span class="text-2xl font-bold text-primary">${progress}%</span>
+                    <span class="text-3xl font-bold text-primary">${progress}%</span>
                 </div>
             </div>
-            <div class="h-4 w-full bg-secondary rounded-full overflow-hidden">
-                <div class="h-full bg-gradient-to-r from-primary to-orange-400 transition-all duration-1000" style="width: ${progress}%"></div>
+            
+            <!-- Progress Bar -->
+            <div class="h-3 w-full bg-secondary/50 rounded-full overflow-hidden">
+                <div class="h-full bg-primary transition-all duration-1000 ease-out" style="width: ${progress}%"></div>
             </div>
 
             <!-- Day Nav -->
-            <div class="flex gap-4 overflow-x-auto py-4 no-scrollbar mask-fade">
+            <div class="flex gap-3 overflow-x-auto py-4 no-scrollbar mask-fade items-center">
                 ${renderDayNav()}
             </div>
 
-            <!-- Daily Card -->
-            <div class="bg-card rounded-[2rem] shadow-xl overflow-hidden border-none">
-                <div class="h-2 bg-gradient-to-r from-primary to-orange-400 w-full"></div>
-                <div class="p-8 space-y-8">
-                    <div>
-                        <span class="bg-secondary text-secondary-foreground px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wider">${currentContent.theme}</span>
-                        <h3 class="text-4xl font-heading font-bold mt-4 leading-tight">${currentContent.title}</h3>
+            <!-- Main Card -->
+            <div class="bg-white rounded-[2rem] shadow-sm border border-border p-6 md:p-10">
+                <!-- Theme Pill -->
+                <div class="mb-6">
+                     <span class="bg-secondary px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider text-foreground/80">${currentContent.theme}</span>
+                </div>
+                
+                <div class="grid md:grid-cols-2 gap-12 lg:gap-16">
+                    <!-- Left Column -->
+                    <div class="space-y-8">
+                        <div>
+                            <div class="flex justify-between items-start">
+                                <h3 class="text-4xl font-heading font-bold mb-6 leading-tight">${currentContent.title}</h3>
+                                <span class="text-6xl font-heading font-bold text-muted/30 select-none">0${state.user.currentDay}</span>
+                            </div>
+                            
+                            <div class="space-y-3 mb-8">
+                                <h4 class="text-xs font-bold text-muted-foreground uppercase tracking-wider">Insight</h4>
+                                <p class="text-lg text-foreground/80 leading-relaxed">${currentContent.insight}</p>
+                            </div>
+                            
+                            <!-- Action Box -->
+                            <div class="bg-yellow-50 p-6 rounded-2xl border border-yellow-100">
+                                <h4 class="text-xs font-bold text-yellow-600 uppercase tracking-wider mb-2 flex items-center gap-2">
+                                    <span class="w-2 h-2 rounded-full bg-yellow-500"></span> Today's Action
+                                </h4>
+                                <p class="text-base font-medium text-foreground">${currentContent.action}</p>
+                            </div>
+                            
+                            <!-- Script -->
+                            <div class="space-y-3 pt-4">
+                                 <h4 class="text-xs font-bold text-muted-foreground uppercase tracking-wider">Suggested Script</h4>
+                                 <blockquote class="font-serif italic text-xl text-foreground/70 border-l-4 border-primary pl-4 py-1">
+                                    "${currentContent.script}"
+                                 </blockquote>
+                            </div>
+                        </div>
                     </div>
-
-                    <section>
-                        <h4 class="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-3">Insight</h4>
-                        <p class="text-lg font-medium leading-relaxed">${currentContent.insight}</p>
-                    </section>
-
-                    <button onclick="switchTab('practice')" class="w-full h-14 rounded-full bg-secondary text-secondary-foreground font-bold text-lg hover:bg-secondary/80 transition-all">
-                        Go to Practice
-                    </button>
+                    
+                    <!-- Right Column -->
+                    <div class="flex flex-col h-full">
+                         <div class="bg-secondary/20 rounded-2xl p-6 flex-1 flex flex-col border border-border/50">
+                              <h4 class="text-xs font-bold text-foreground uppercase tracking-wider mb-4">Daily Reflection</h4>
+                              <p class="text-sm text-muted-foreground italic mb-4 leading-relaxed">${currentContent.reflection_question}</p>
+                              <textarea id="reflection-input" class="flex-1 w-full bg-white rounded-xl p-4 border border-border resize-none focus:ring-2 focus:ring-primary/20 outline-none transition-all text-sm leading-relaxed" placeholder="Write your thoughts here...">${state.user.reflections[state.user.currentDay] || ''}</textarea>
+                              <div class="mt-4 text-right">
+                                  <button onclick="saveReflection()" class="text-xs font-bold text-muted-foreground hover:text-primary transition-colors">Save Note</button>
+                              </div>
+                         </div>
+                         
+                         <!-- Complete Button -->
+                         <button onclick="completeDay()" class="w-full h-14 rounded-full font-bold text-lg shadow-xl shadow-primary/20 mt-8 transition-all hover:scale-[1.02] active:scale-[0.98] ${isCompleted ? 'bg-primary text-primary-foreground opacity-90' : 'bg-primary text-primary-foreground hover:bg-primary/90'}">
+                            ${isCompleted ? 'Mark Day Complete' : 'Mark Day Complete'}
+                         </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -457,31 +564,36 @@ function renderJourney() {
 
 function renderCoach() {
     return `
-        <div class="bg-card rounded-[2rem] shadow-xl overflow-hidden border border-border/50 h-[75vh] flex flex-col">
-            <div class="p-6 border-b border-border flex items-center gap-4 bg-muted/30">
-                <div class="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center border-2 border-white shadow-sm">
-                    <span class="text-2xl">🦁</span>
+        <div class="max-w-3xl mx-auto animate-in zoom-in-95 duration-500">
+            <div class="bg-white rounded-[2rem] shadow-sm border border-border h-[75vh] flex flex-col overflow-hidden">
+                <!-- Header -->
+                <div class="p-6 border-b border-border flex items-center gap-4 bg-white">
+                     <div class="w-12 h-12 rounded-full overflow-hidden border border-border bg-yellow-100 flex items-center justify-center">
+                         <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Lion&backgroundColor=ffdfbf" alt="Coach" class="w-full h-full object-cover">
+                     </div>
+                     <div>
+                         <h3 class="font-heading font-bold text-lg">LionLead Coach</h3>
+                         <div class="flex items-center gap-2 text-xs text-green-600 font-bold">
+                             <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                             Online & Ready to help
+                         </div>
+                     </div>
                 </div>
-                <div>
-                    <h3 class="font-heading font-bold text-lg">LionLead Coach</h3>
-                    <div class="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                        Online
-                    </div>
+                
+                <!-- Chat Area -->
+                <div id="chat-messages" class="flex-1 p-8 overflow-y-auto space-y-6 bg-secondary/10">
+                     ${renderMessages()}
                 </div>
-            </div>
-
-            <div id="chat-messages" class="flex-1 p-6 overflow-y-auto space-y-6">
-                ${renderMessages()}
-            </div>
-
-            <div class="p-4 bg-muted/30 border-t border-border">
-                <form onsubmit="sendMessage(event)" class="relative flex items-center">
-                    <input id="chat-input" type="text" class="w-full h-14 pl-6 pr-14 rounded-full border-2 border-border focus:border-primary bg-background text-lg shadow-sm outline-none" placeholder="Ask for advice...">
-                    <button type="submit" class="absolute right-2 w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-colors">
-                        <i data-lucide="send" class="w-5 h-5"></i>
-                    </button>
-                </form>
+                
+                <!-- Input Area -->
+                <div class="p-6 bg-white border-t border-border">
+                     <form onsubmit="sendMessage(event)" class="relative">
+                         <input id="chat-input" type="text" class="w-full h-14 pl-6 pr-14 rounded-full border border-border bg-secondary/20 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none text-base" placeholder="Ask for advice, scripts, or feedback...">
+                         <button type="submit" class="absolute right-2 top-2 w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-all shadow-md hover:scale-105 active:scale-95">
+                             <i data-lucide="send" class="w-5 h-5"></i>
+                         </button>
+                     </form>
+                </div>
             </div>
         </div>
     `;
@@ -534,24 +646,24 @@ function renderDayNav() {
         const isCurrent = i === state.user.currentDay;
         const isLocked = i > state.user.currentDay;
 
-        let classes = "flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center font-bold transition-all ";
-        if (isCurrent) classes += "bg-foreground text-background scale-110 shadow-lg ring-2 ring-primary ring-offset-2";
-        else if (isCompleted) classes += "bg-primary text-primary-foreground hover:bg-primary/90";
-        else if (isLocked) classes += "bg-muted text-muted-foreground opacity-50 cursor-not-allowed";
-        else classes += "bg-card text-foreground hover:bg-secondary border border-border";
+        let classes = "flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center font-bold transition-all text-sm ";
+        if (isCurrent) classes += "bg-foreground text-background scale-110 shadow-lg ring-4 ring-primary/20";
+        else if (isCompleted) classes += "bg-secondary text-foreground hover:bg-secondary/80";
+        else if (isLocked) classes += "bg-muted/50 text-muted-foreground/50 cursor-not-allowed";
+        else classes += "bg-white text-foreground hover:bg-secondary border border-border";
 
-        html += `<button ${isLocked ? 'disabled' : `onclick="switchDay(${i})"`} class="${classes}">${isCompleted && !isCurrent ? '<i data-lucide="check" class="w-5 h-5"></i>' : i}</button>`;
+        html += `<button ${isLocked ? 'disabled' : `onclick="switchDay(${i})"`} class="${classes}">${isCompleted && !isCurrent ? '<i data-lucide="check" class="w-4 h-4"></i>' : i}</button>`;
     }
     return html;
 }
 
 function renderMessages() {
     return state.messages.map(msg => `
-        <div class="flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'} animate-in slide-in-from-bottom-2">
-            <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${msg.role === 'user' ? 'bg-primary/20 text-primary-foreground' : 'bg-muted text-muted-foreground'}">
-                <i data-lucide="${msg.role === 'user' ? 'user' : 'bot'}" class="w-5 h-5 text-foreground"></i>
+        <div class="flex gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'} animate-in slide-in-from-bottom-2">
+            <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 border border-border ${msg.role === 'user' ? 'bg-primary/20 text-primary-foreground hidden' : 'bg-white text-muted-foreground'}">
+                ${msg.role === 'user' ? '' : '<i data-lucide="bot" class="w-6 h-6 text-foreground"></i>'}
             </div>
-            <div class="max-w-[80%] p-4 rounded-2xl text-base leading-relaxed ${msg.role === 'user' ? 'bg-primary text-primary-foreground rounded-tr-none shadow-md' : 'bg-secondary text-secondary-foreground rounded-tl-none'}">
+            <div class="max-w-[85%] p-5 rounded-2xl text-base leading-relaxed shadow-sm ${msg.role === 'user' ? 'bg-white text-foreground rounded-br-none border border-border' : 'bg-[#F3F0EB] text-foreground rounded-tl-none'}">
                 ${msg.content}
             </div>
         </div>

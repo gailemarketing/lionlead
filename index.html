@@ -100,12 +100,18 @@
 
 <body>
     <!-- Header -->
-    <header class="flex items-center justify-between px-6 py-4 lg:px-12 lg:py-6 max-w-site mx-auto w-full">
-        <a href="/" class="flex items-center gap-2 hover:opacity-80 transition-opacity">
-            <img src="logo.png?v=2" alt="LionLead Logo" class="w-10 h-10 object-contain">
-            <span class="font-heading font-bold text-2xl tracking-tight">LionLead</span>
-        </a>
-        <button id="login-btn" class="font-bold text-foreground hover:text-primary transition-colors">Log in</button>
+    <!-- Header -->
+    <header class="w-full bg-white border-b border-border/50 sticky top-0 z-50">
+        <div class="flex items-center justify-between px-6 py-2 lg:px-12 lg:py-3 max-w-site mx-auto w-full">
+            <a href="/" class="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                <img src="logo.png?v=2" alt="LionLead Logo" class="w-10 h-10 object-contain">
+                <span class="font-heading font-bold text-2xl tracking-tight">LionLead</span>
+            </a>
+            <div id="header-right">
+                <button id="login-btn" class="font-bold text-foreground hover:text-primary transition-colors">Log
+                    in</button>
+            </div>
+        </div>
     </header>
 
     <div id="hero-section"
@@ -338,7 +344,7 @@
     </div>
 
     <!-- App Container (Hidden initially, shown after onboarding) -->
-    <div id="app" class="hidden flex-1 p-4 md:p-8 max-w-2xl mx-auto w-full pb-24 md:pb-8">
+    <div id="app" class="hidden flex-1 p-4 md:p-8 max-w-site mx-auto w-full pb-24 md:pb-8">
         <!-- Content will be injected here by app.js -->
     </div>
 
