@@ -7,6 +7,8 @@ import { Hero } from '@/components/Hero'
 import { Dashboard } from '@/components/Dashboard'
 import journeyData from '@/data/journey.json'
 
+export const dynamic = 'force-dynamic'
+
 export default async function Home() {
   let user = null
   let supabase = null
