@@ -1,0 +1,55 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: hsl(40 30% 97%);
+  --color-foreground: hsl(20 10% 15%);
+  --color-card: hsl(0 0% 100%);
+  --color-card-foreground: hsl(20 10% 15%);
+  --color-popover: hsl(0 0% 100%);
+  --color-popover-foreground: hsl(20 10% 15%);
+  --color-primary: hsl(45 100% 50%);
+  --color-primary-foreground: hsl(20 20% 10%);
+  --color-secondary: hsl(35 30% 90%);
+  --color-secondary-foreground: hsl(20 10% 15%);
+  --color-muted: hsl(35 20% 92%);
+  --color-muted-foreground: hsl(20 5% 45%);
+  --color-accent: hsl(25 90% 65%);
+  --color-accent-foreground: hsl(0 0% 100%);
+  --color-destructive: hsl(0 84% 60%);
+  --color-destructive-foreground: hsl(0 0% 98%);
+  --color-border: hsl(35 15% 85%);
+  --color-input: hsl(35 15% 85%);
+  --color-ring: hsl(45 100% 50%);
+
+  --font-heading: "Space Grotesk", sans-serif;
+  --font-sans: "DM Sans", sans-serif;
+}
+
+/* Custom Utilities from legacy style block */
+@utility no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@utility mask-fade {
+  mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-heading);
+}

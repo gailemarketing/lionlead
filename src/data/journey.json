@@ -1,0 +1,47 @@
+[
+    {
+        "day": 1,
+        "title": "The Identity Shift",
+        "theme": "IDENTITY SHIFT & EXPECTATIONS",
+        "insight": "Your first job as a leader is to stop doing everyone else's job. You are no longer measured by your individual output, but by the output of your team. This feels uncomfortable because 'doing' gave you control. Leading requires letting go.",
+        "action": "Identify one task you were planning to do yourself today, and instead delegate it to a team member with clear context on *why* it matters.",
+        "script": "I'd like you to take the lead on this because it aligns with your goal to improve X. I'm here to support, but I trust you to drive it.",
+        "reflection_question": "What is one 'doer' habit you are holding onto that is no longer serving you in this new role?"
+    },
+    {
+        "day": 2,
+        "title": "Define Your North Star",
+        "theme": "Vision & Strategy",
+        "insight": "A leader without a vision is just a manager of tasks. Your team needs to know not just what they are doing, but why it matters in the grand scheme.",
+        "action": "Draft a simple 1-sentence mission statement for your team. It doesn't have to be perfect. Validated it with your manager.",
+        "script": "I'm refining our team's core purpose to ensure we're all aligned. Here is my draft... what resonates with you?",
+        "reflection_question": "Is your mission statement clear enough that a new hire would understand it instantly?"
+    },
+    {
+        "day": 3,
+        "title": "Quick Wins",
+        "theme": "Execution",
+        "insight": "Trust is built through action. Delivering a small, tangible improvement early on signals that you are here to make things better, not just different.",
+        "action": "Identify one small annoyance or blocker that the team faces daily and fix it. It could be a broken process, a missing tool access, or a redundant meeting.",
+        "script": "I noticed [blocker] has been slowing us down. I've taken steps to remove it by [action]. Let me know if this helps.",
+        "reflection_question": "How did the team react to this quick win? Did it build trust?"
+    },
+    {
+        "day": 4,
+        "title": "Delegate to Elevate",
+        "theme": "Empowerment",
+        "insight": "Delegation is not dumping work; it's developmental. When you hold onto tasks, you become the bottleneck and rob your team of growth opportunities.",
+        "action": "Choose one task you are currently doing that could be a growth opportunity for someone else. Hand it over with clear context, not just instructions.",
+        "script": "I want to give you more ownership over [Project X]. I trust you to handle it, but I'm here to support if you get stuck.",
+        "reflection_question": "How did it feel to let go? Did you hover or truly delegate?"
+    },
+    {
+        "day": 5,
+        "title": "The Feedback Loop",
+        "theme": "Communication",
+        "insight": "Feedback is the breakfast of champions, but it can be hard to swallow. The earlier you establish a culture of open looping, the faster you will learn.",
+        "action": "Ask your manager for specific feedback on your first week. Use the 'Start, Stop, Continue' framework.",
+        "script": "I'm settling in and would love some calibration. based on what you've seen, what should I start, stop, or continue doing?",
+        "reflection_question": "Was the feedback actionable? How did you receive it?"
+    }
+]
