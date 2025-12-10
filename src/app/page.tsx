@@ -10,9 +10,19 @@ import journeyData from '@/data/journey.json'
 export default async function Home() {
   const supabase = await createClient()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  let user = null
+  try {
+    const { data } = await supabase.auth.getUser()
+    user = data.user
+  } catch (error) {
+    console.error("Supabase Auth Error:", error)
+    // Fallback to null user (Logged out state)
+  }
+
+  // Handle redirect if needed (though middleware should handle this usually)
+  // if (!user) {
+  //   return redirect('/login') 
+  // }
 
   let completedDays: number[] = []
 
