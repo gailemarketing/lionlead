@@ -8,15 +8,17 @@ import { Dashboard } from '@/components/Dashboard'
 import journeyData from '@/data/journey.json'
 
 export default async function Home() {
-  const supabase = await createClient()
-
   let user = null
+  let supabase = null
+
   try {
+    // Move client creation INSIDE try-catch because it might crash if env vars are missing
+    supabase = await createClient()
     const { data } = await supabase.auth.getUser()
     user = data.user
   } catch (error) {
-    console.error("Supabase Auth Error:", error)
-    // Fallback to null user (Logged out state)
+    console.error("Supabase Error (Likely missing Env Vars):", error)
+    // Fallback: user remains null, site renders in "Logged Out" mode
   }
 
   // Handle redirect if needed (though middleware should handle this usually)
@@ -26,7 +28,7 @@ export default async function Home() {
 
   let completedDays: number[] = []
 
-  if (user) {
+  if (user && supabase) {
     // Fetch completed days
     const { data: progress } = await supabase
       .from('user_progress')
